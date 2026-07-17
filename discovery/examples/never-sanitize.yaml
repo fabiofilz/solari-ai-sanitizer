@@ -1,0 +1,9 @@
+id: EX-NEVER-SANITIZE
+rules: [FR-DECISION-004, FR-DECISION-005]
+workspace:
+  terms:
+    - {original: Payment API, policy: NEVER}
+input: Payment API publishes events through Kafka.
+expected:
+  sanitized: Payment API publishes events through Kafka.
+  pending: []

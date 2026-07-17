@@ -1,0 +1,69 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+secrets/
+private/
+
+# Local application data
+*.db
+*.sqlite
+*.sqlite3
+local-data/
+user-data/
+data/
+documents/
+exports/
+logs/
+tmp/
+temp/
+
+# Node, React and Electron
+node_modules/
+dist/
+build/
+out/
+release/
+coverage/
+.npm/
+.yarn/
+.pnpm-store/
+*.asar
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+
+# Local models and AI runtime
+models/
+ollama-data/
+*.gguf
+*.onnx
+
+# Credentials, certificates and keys
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+
+# Operating systems
+.DS_Store
+Thumbs.db
+
+# Miscellaneous
+*.log
+*.tmp

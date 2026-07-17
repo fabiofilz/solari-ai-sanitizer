@@ -1,0 +1,55 @@
+specification:
+  id: SPEC-TESTING
+  version: 0.1.0
+  status: draft
+
+testing:
+  principles:
+    - Every critical business and security rule has automated coverage.
+    - Tests reference rule IDs in names or metadata.
+    - Fixtures are synthetic and contain no real customer data.
+    - Tests run without internet access.
+
+  layers:
+    unit:
+      covers: [prefix_normalization, sequence_allocation, detectors, replacement_order, restoration, policy_resolution]
+    property_based:
+      covers: [round_trip, idempotence, text_preservation, workspace_isolation, prefix_invariants]
+    integration:
+      covers: [SQLite_transactions, migrations, API_validation, local_AI_fallback, process_ownership]
+    end_to_end:
+      covers: [workspace_flow, bidirectional_editor, pending_decisions, aliases, principal_selection, restart_persistence]
+    security:
+      covers: [loopback_enforcement, redirect_rejection, log_redaction, renderer_configuration, cross_workspace_access]
+
+  required_properties:
+    - id: TEST-PROP-001
+      property: Sanitizing known mappings twice yields identical output.
+    - id: TEST-PROP-002
+      property: Restoring sanitized output yields canonical originals, not necessarily original aliases.
+    - id: TEST-PROP-003
+      property: Unmatched characters remain byte-for-byte equivalent after replacement, except configured newline normalization.
+    - id: TEST-PROP-004
+      property: A workspace can never resolve another workspace placeholder.
+    - id: TEST-PROP-005
+      property: Generated placeholders always match ^[A-Z]+(?:_[A-Z]+)*_[1-9][0-9]*$.
+    - id: TEST-PROP-006
+      property: Concurrent allocations never duplicate a placeholder.
+
+  quality_gates:
+    - specification_validator_passes
+    - formatting_passes
+    - linting_passes
+    - TypeScript_typecheck_passes
+    - Python_typecheck_passes
+    - unit_and_integration_tests_pass
+    - end_to_end_critical_path_passes
+    - dependency_audit_has_no_unaccepted_critical_findings
+    - build_succeeds_for_windows_and_macos
+
+  prohibited_test_practices:
+    - external_public_AI_calls
+    - real_credentials
+    - real_customer_or_employer_names
+    - network_required_tests
+    - assertions_depending_only_on_visual_color

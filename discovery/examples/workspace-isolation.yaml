@@ -1,0 +1,13 @@
+id: EX-WORKSPACE-ISOLATION
+rules: [FR-WORKSPACE-009, FR-RESTORE-005]
+workspaces:
+  A:
+    mappings: [{original: Synthetic Bank, placeholder: COMPANY_1}]
+  B:
+    mappings: []
+operation:
+  workspace: B
+  restore: COMPANY_1
+expected:
+  output: COMPANY_1
+  unresolved: [COMPANY_1]

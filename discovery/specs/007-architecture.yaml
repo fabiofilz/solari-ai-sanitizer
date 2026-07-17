@@ -1,0 +1,84 @@
+specification:
+  id: SPEC-ARCHITECTURE
+  version: 0.1.0
+  status: draft
+
+architecture:
+  style: local_first_layered_desktop
+  desktop:
+    framework: Electron
+    renderer: React
+    language: TypeScript
+    editor: Monaco Editor
+    packaging: electron-builder
+    platforms: [windows_x64, windows_arm64, macos_x64, macos_arm64]
+  local_backend:
+    language: Python
+    framework: FastAPI
+    validation: Pydantic
+    orm: SQLAlchemy
+    packaging: bundled_sidecar
+    bind_address: 127.0.0.1
+    port: dynamically_allocated
+  persistence:
+    engine: SQLite
+    location: operating_system_application_data_directory
+  local_ai:
+    primary_runtime: Ollama
+    endpoint_policy: loopback_only
+    optional: true
+
+boundaries:
+  renderer:
+    permissions: [render_UI, request_operations]
+    forbidden: [direct_database_access, arbitrary_shell, external_network]
+  electron_main:
+    responsibilities: [window_lifecycle, sidecar_lifecycle, secure_IPC, filesystem_dialogs]
+  backend:
+    responsibilities: [detection, mapping, restoration, persistence, local_AI_orchestration]
+  external_network:
+    default: denied
+
+api:
+  transport: authenticated_loopback_HTTP
+  authentication: random_per_launch_token
+  content_type: application_json
+  required_routes:
+    - /health
+    - /workspaces
+    - /sanitize
+    - /restore
+    - /decisions
+    - /terms
+    - /prefixes
+    - /settings
+    - /local-ai/status
+  constraints:
+    - CORS permits only the packaged renderer origin.
+    - Request bodies containing text are never logged.
+    - Backend rejects non-loopback clients.
+
+lifecycle:
+  startup:
+    - Acquire single-instance lock.
+    - Locate or start bundled backend.
+    - Run recoverable database migrations.
+    - Detect independently running local AI or start configured owned runtime.
+    - Open desktop window after backend health succeeds.
+  shutdown:
+    - Stop accepting new work.
+    - Finish or roll back transactions.
+    - Stop owned backend and owned local-AI children.
+    - Never stop independently running services.
+
+implementation_constraints:
+  - id: ARCH-CONSTRAINT-001
+    rule: No cloud backend is permitted.
+  - id: ARCH-CONSTRAINT-002
+    rule: Renderer security uses contextIsolation true, nodeIntegration false, and a minimal preload API.
+  - id: ARCH-CONSTRAINT-003
+    rule: All dependencies and installers use pinned versions and lockfiles.
+  - id: ARCH-CONSTRAINT-004
+    rule: Domain logic is independent from Electron and transport frameworks.
+  - id: ARCH-CONSTRAINT-005
+    rule: Deterministic sanitization remains functional without local AI.

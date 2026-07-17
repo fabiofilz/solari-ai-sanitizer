@@ -1,0 +1,6 @@
+id: EX-DETERMINISTIC-DATA
+rules: [FR-SANITIZE-007]
+input: 'Contact alex@example.test from 10.20.30.40 using AWS account 123456789012.'
+expected:
+  sanitized: 'Contact EMAIL_1 from IP_ADDRESS_1 using AWS account AWS_ACCOUNT_1.'
+  pending: []

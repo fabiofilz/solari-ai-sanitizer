@@ -1,0 +1,513 @@
+specification:
+  id: SPEC-PRODUCT
+  version: 0.1.0
+  status: draft
+  title: AI Sanitizer Product Specification
+  language: en
+  source_of_truth: true
+
+product:
+  name: AI Sanitizer
+  category: local_first_desktop_application
+
+  summary: >-
+    A desktop application that replaces sensitive information with persistent,
+    consistent placeholders before text is shared with a public language model,
+    and restores sanitized placeholders to canonical original values.
+
+  problem: >-
+    Professionals need to use public language models without exposing customer
+    identities, credentials, personal data, infrastructure identifiers,
+    internal resources, or confidential business terms. Manual replacement is
+    inconsistent across documents, chats, days, and customers.
+
+  target_users:
+    - solution_architects
+    - software_architects
+    - developers
+    - devops_engineers
+    - cloud_engineers
+    - security_professionals
+    - independent_consultants
+    - technical_documentation_authors
+
+  primary_platforms:
+    - windows
+    - macos
+
+  principles:
+    - id: PRD-PRINCIPLE-001
+      statement: >-
+        Original text, restored text, mappings, and local-AI prompts remain on
+        the user's device.
+
+    - id: PRD-PRINCIPLE-002
+      statement: >-
+        Preserve useful technical context and sanitize only information that is
+        sensitive by deterministic rule or explicit workspace decision.
+
+    - id: PRD-PRINCIPLE-003
+      statement: >-
+        The mapping dictionary is persistent and independent from individual
+        documents or chats.
+
+    - id: PRD-PRINCIPLE-004
+      statement: >-
+        Each workspace has an isolated mapping dictionary and decision history.
+
+    - id: PRD-PRINCIPLE-005
+      statement: >-
+        The local AI suggests candidates, prefixes, and similarities but never
+        makes irreversible product decisions for the user.
+
+    - id: PRD-PRINCIPLE-006
+      statement: >-
+        After a user decides ALWAYS or NEVER for a term, the same workspace must
+        not ask about that term again unless the saved decision is modified or
+        removed.
+
+    - id: PRD-PRINCIPLE-007
+      statement: >-
+        Sanitization and restoration must be deterministic after mappings and
+        policies have been persisted.
+
+goals:
+  - id: GOAL-001
+    statement: >-
+      Prevent sensitive information from being copied to public language models.
+
+  - id: GOAL-002
+    statement: >-
+      Preserve enough architecture, technology, and business context for the
+      public language model to provide useful answers.
+
+  - id: GOAL-003
+    statement: >-
+      Reuse the same placeholder for the same original value across all sessions
+      in a workspace.
+
+  - id: GOAL-004
+    statement: >-
+      Support multiple isolated customer or project contexts on the same device.
+
+  - id: GOAL-005
+    statement: >-
+      Restore sanitized text using the canonical original value selected by the
+      user.
+
+  - id: GOAL-006
+    statement: >-
+      Allow users to inspect, search, add, edit, merge, and remove saved terms
+      and decisions.
+
+  - id: GOAL-007
+    statement: >-
+      Run as an installable desktop product on Windows and macOS.
+
+non_goals:
+  - id: NON-GOAL-001
+    statement: >-
+      The application is not a cloud service and does not require a cloud
+      backend.
+
+  - id: NON-GOAL-002
+    statement: >-
+      The application does not send original or restored text to public AI
+      services.
+
+  - id: NON-GOAL-003
+    statement: >-
+      The application does not attempt to anonymize every technical word.
+
+  - id: NON-GOAL-004
+    statement: >-
+      Common technology names such as Kafka, MSK, Kubernetes, PostgreSQL,
+      Terraform, and AWS are not sensitive merely because they appear in text.
+
+  - id: NON-GOAL-005
+    statement: >-
+      Common environment labels such as production, prod, stage, staging, UAT,
+      QA, development, and dev are not sensitive by themselves.
+
+  - id: NON-GOAL-006
+    statement: >-
+      The application does not retain a history of every document pasted into
+      the editor.
+
+  - id: NON-GOAL-007
+    statement: >-
+      The application does not build or maintain a project knowledge graph.
+
+  - id: NON-GOAL-008
+    statement: >-
+      The application does not replace professional security review or guarantee
+      zero risk.
+
+core_concepts:
+  workspace:
+    definition: >-
+      An isolated customer, employer, project, or context containing its own
+      settings, mappings, policies, prefixes, counters, and pending decisions.
+
+  original_value:
+    definition: >-
+      The real text detected or registered in a workspace.
+
+  policy:
+    definition: >-
+      A persistent decision defining whether an original value must always be
+      sanitized or must never be sanitized.
+    allowed_values:
+      - ALWAYS
+      - NEVER
+
+  prefix:
+    definition: >-
+      An uppercase label used by the system to generate a placeholder.
+    examples:
+      - COMPANY
+      - PERSON
+      - TOKEN
+      - AWS_ACCOUNT
+      - NOME_CLIENTE
+
+  sequence:
+    definition: >-
+      A positive integer assigned and controlled by the system for a prefix
+      within a workspace.
+
+  placeholder:
+    definition: >-
+      The generated sanitized value composed from a normalized prefix, one
+      underscore, and a system-controlled sequence.
+    format: PREFIX_SEQUENCE
+    examples:
+      - COMPANY_1
+      - AWS_ACCOUNT_2
+      - NOME_CLIENTE_3
+
+  mapping:
+    definition: >-
+      A persistent relationship between an original value and a placeholder,
+      scoped to one workspace.
+
+  alias:
+    definition: >-
+      One of multiple original values that intentionally map to the same
+      placeholder.
+
+  principal_original:
+    definition: >-
+      The canonical original value used when restoring a placeholder that has
+      multiple original values.
+
+  pending_decision:
+    definition: >-
+      A unique unresolved candidate that requires the user to choose ALWAYS or
+      NEVER, and when ALWAYS, confirm its prefix or existing placeholder.
+
+  deterministic_detector:
+    definition: >-
+      A local rule such as a regular expression or structured parser that finds
+      known sensitive formats without a language model.
+
+  local_ai:
+    definition: >-
+      A model running on the user's computer that suggests ambiguous sensitive
+      terms, prefixes, and possible aliases.
+
+  confidence:
+    definition: >-
+      A normalized similarity or classification score shown as a percentage to
+      help the user decide whether two terms represent the same entity.
+
+sensitive_information:
+  always_detect_and_sanitize:
+    description: >-
+      Structured values in these categories are automatically sanitized when
+      detected with a valid deterministic pattern.
+    categories:
+      - passwords
+      - secrets
+      - API_keys
+      - access_tokens
+      - refresh_tokens
+      - JWTs
+      - OAuth_client_secrets
+      - cloud_access_keys
+      - private_keys
+      - connection_strings_with_credentials
+      - email_addresses
+      - telephone_numbers
+      - CPF
+      - CNPJ
+      - credit_card_numbers
+      - public_IP_addresses
+      - private_IP_addresses
+      - hostnames
+      - internal_DNS_names
+      - URLs
+      - UUIDs
+      - AWS_account_IDs
+      - AWS_ARNS
+      - Azure_subscription_IDs
+      - Azure_tenant_IDs
+      - GCP_project_IDs
+      - customer_IDs
+      - order_IDs
+      - contract_IDs
+      - employee_IDs
+      - other_explicitly_labeled_internal_IDs
+
+  ask_user:
+    description: >-
+      These values require a persistent user decision unless they already match
+      a deterministic sensitive rule or an existing workspace decision.
+    categories:
+      - company_names
+      - customer_names
+      - person_names
+      - project_names
+      - internal_system_names
+      - microservice_names
+      - database_names
+      - table_names
+      - Kafka_topic_names
+      - queue_names
+      - bucket_names
+      - repository_names
+      - product_names
+      - proprietary_algorithms
+      - confidential_business_terms
+      - internal_component_names
+
+  preserve_by_default:
+    description: >-
+      These terms remain unchanged when they do not contain another sensitive
+      value and have no explicit ALWAYS decision.
+    categories:
+      - public_technology_names
+      - programming_languages
+      - architectural_patterns
+      - cloud_service_types
+      - database_technologies
+      - generic_environment_names
+      - generic_business_and_technical_concepts
+
+primary_capabilities:
+  - id: CAP-001
+    name: workspace_management
+    description: >-
+      Create, open, rename, duplicate, export, import, and delete isolated
+      workspaces.
+
+  - id: CAP-002
+    name: bidirectional_editor
+    description: >-
+      Display original text on the left and sanitized text on the right, allowing
+      either side to be used as the input direction.
+
+  - id: CAP-003
+    name: deterministic_sanitization
+    description: >-
+      Detect and replace structured sensitive information locally.
+
+  - id: CAP-004
+    name: persistent_decisions
+    description: >-
+      Persist ALWAYS and NEVER decisions per workspace and never ask again while
+      the decision exists.
+
+  - id: CAP-005
+    name: persistent_mappings
+    description: >-
+      Reuse existing placeholders consistently across application restarts.
+
+  - id: CAP-006
+    name: alias_management
+    description: >-
+      Allow multiple original values to map to one placeholder.
+
+  - id: CAP-007
+    name: canonical_restoration
+    description: >-
+      Restore a placeholder to its only original or to the selected principal
+      original when aliases exist.
+
+  - id: CAP-008
+    name: prefix_management
+    description: >-
+      Suggest, normalize, validate, persist, and reuse placeholder prefixes.
+
+  - id: CAP-009
+    name: local_ai_suggestions
+    description: >-
+      Use a local model to suggest ambiguous candidates, suitable prefixes, and
+      possible matches to existing mappings.
+
+  - id: CAP-010
+    name: confidence_assistance
+    description: >-
+      Show confidence scores without treating them as automatic identity
+      decisions.
+
+  - id: CAP-011
+    name: term_management
+    description: >-
+      Search, filter, add, edit, delete, merge, split, and inspect terms and
+      policies.
+
+  - id: CAP-012
+    name: local_persistence
+    description: >-
+      Persist workspace state in a local SQLite database without storing pasted
+      document history.
+
+  - id: CAP-013
+    name: offline_operation
+    description: >-
+      Operate without internet access after required application and local-model
+      components are installed.
+
+product_behavior_summary:
+  sanitization:
+    - Detect deterministic sensitive values.
+    - Apply existing ALWAYS mappings.
+    - Preserve existing NEVER values.
+    - Ask once for unresolved ambiguous candidates.
+    - Apply one decision to every occurrence of the same candidate.
+    - Save the decision and mapping in the active workspace.
+    - Recompute sanitized output without losing text structure.
+
+  restoration:
+    - Detect known placeholders in sanitized input.
+    - Resolve each placeholder inside the active workspace only.
+    - Use the sole original when exactly one exists.
+    - Use the principal original when multiple originals exist.
+    - Report unresolved placeholders without guessing.
+    - Never use mappings from another workspace.
+
+  similarity:
+    - Compare a new candidate with existing workspace originals.
+    - Display the closest suggested match and confidence.
+    - Ask whether the new value is the same entity or a different entity.
+    - If it is the same, map it to the existing placeholder.
+    - If aliases then exist, require exactly one principal original.
+    - If it is different, create a new placeholder.
+
+  prefix_generation:
+    - The user edits or selects only the prefix.
+    - The system controls the sequence.
+    - Prefixes contain uppercase ASCII letters and internal underscores only.
+    - Leading and trailing underscores are removed.
+    - Consecutive underscores are collapsed.
+    - Spaces and hyphens are converted to underscores.
+    - Diacritics are removed before validation.
+    - The final placeholder contains exactly one underscore before the sequence.
+
+data_retention:
+  persist:
+    - workspaces
+    - workspace_settings
+    - policies
+    - mappings
+    - prefixes
+    - prefix_sequences
+    - principal_original_selection
+    - pending_decisions_until_resolved
+    - local_AI_configuration
+
+  do_not_persist_by_default:
+    - original_editor_text
+    - sanitized_editor_text
+    - restored_editor_text
+    - document_history
+    - clipboard_history
+    - local_AI_prompt_history
+    - raw_detection_payloads
+    - sensitive_runtime_logs
+
+success_criteria:
+  - id: SUCCESS-001
+    statement: >-
+      Reopening a workspace produces the same placeholder for a previously
+      registered original value.
+
+  - id: SUCCESS-002
+    statement: >-
+      Two workspaces may map the same original value differently without data
+      leakage between them.
+
+  - id: SUCCESS-003
+    statement: >-
+      A NEVER decision remains unchanged and produces no future question in the
+      same workspace.
+
+  - id: SUCCESS-004
+    statement: >-
+      All occurrences of one original value in a text receive the same
+      placeholder.
+
+  - id: SUCCESS-005
+    statement: >-
+      Multiple aliases restore to exactly one user-selected principal original.
+
+  - id: SUCCESS-006
+    statement: >-
+      Closing the desktop application stops all application-owned backend and
+      local-AI child processes that it started.
+
+  - id: SUCCESS-007
+    statement: >-
+      The application can complete its core flow while disconnected from the
+      internet.
+
+  - id: SUCCESS-008
+    statement: >-
+      No raw, restored, or mapped sensitive value is transmitted to an external
+      service.
+
+delivery_scope:
+  phase_1:
+    name: deterministic_core
+    includes:
+      - desktop_shell
+      - workspace_management
+      - bidirectional_text_editor
+      - SQLite_persistence
+      - deterministic_detectors
+      - ALWAYS_and_NEVER_decisions
+      - mapping_and_prefix_management
+      - alias_and_principal_management
+      - term_search_and_editing
+      - automated_tests
+
+  phase_2:
+    name: local_ai_assistance
+    includes:
+      - local_model_lifecycle
+      - ambiguous_candidate_detection
+      - prefix_suggestions
+      - similarity_suggestions
+      - confidence_scores
+      - pending_decision_review
+
+  phase_3:
+    name: supported_files
+    includes:
+      - TXT
+      - Markdown
+      - JSON
+      - YAML
+      - XML
+      - environment_files
+      - properties_files
+      - Terraform_files
+      - safe_text_export
+
+  phase_4:
+    name: future_interfaces
+    includes:
+      - command_line_interface
+      - IDE_extension
+      - optional_local_API

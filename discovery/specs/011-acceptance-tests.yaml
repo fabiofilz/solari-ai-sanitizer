@@ -1,0 +1,89 @@
+specification:
+  id: SPEC-ACCEPTANCE-TESTS
+  version: 0.1.0
+  status: draft
+
+acceptance_tests:
+  - id: AC-SANITIZE-001
+    verifies: [FR-SANITIZE-003, FR-SANITIZE-004, BR-MAPPING-001]
+    given: COMPANY_1 already maps Synthetic Bank in the active workspace.
+    when: Text contains Synthetic Bank three times.
+    then: Every occurrence becomes COMPANY_1 and no new placeholder is allocated.
+
+  - id: AC-NEVER-001
+    verifies: [FR-DECISION-004, FR-DECISION-005, BR-POLICY-002]
+    given: Payment API has policy NEVER.
+    when: It appears in a later session.
+    then: It remains unchanged and no pending decision is created.
+
+  - id: AC-PREFIX-001
+    verifies: [FR-PREFIX-002, FR-PREFIX-003, FR-PREFIX-004, FR-PREFIX-005, FR-PREFIX-007]
+    given: The user enters ' Nome Cliente_ '.
+    when: The prefix is normalized and the next sequence is 1.
+    then: The placeholder is NOME_CLIENTE_1 and never NOME_CLIENTE__1.
+
+  - id: AC-ALIAS-001
+    verifies: [FR-ALIAS-003, FR-ALIAS-005, FR-ALIAS-006, FR-RESTORE-003]
+    given: Synthetic Bank and Synthetic Bank SA are confirmed as the same entity.
+    when: Synthetic Bank SA is selected principal and COMPANY_1 is restored.
+    then: The restored value is Synthetic Bank SA.
+
+  - id: AC-DIFFERENT-001
+    verifies: [FR-ALIAS-002, FR-ALIAS-004, FR-ALIAS-009]
+    given: A new term has 97 percent similarity to an existing term.
+    when: The user chooses different entity.
+    then: A different placeholder is created despite the high confidence.
+
+  - id: AC-WORKSPACE-001
+    verifies: [FR-WORKSPACE-009, FR-RESTORE-005, BR-WORKSPACE-002]
+    given: Workspace A knows COMPANY_1 and Workspace B does not.
+    when: COMPANY_1 is restored in Workspace B.
+    then: It remains unchanged and is reported unresolved.
+
+  - id: AC-BIDIRECTIONAL-001
+    verifies: [FR-EDITOR-002, FR-EDITOR-003, FR-EDITOR-004]
+    given: A known bidirectional mapping exists.
+    when: The user alternates edits between left and right editors.
+    then: The opposite side updates once without a feedback loop.
+
+  - id: AC-DETECTOR-001
+    verifies: [FR-SANITIZE-007, BR-DETECTION-001]
+    given: Text contains a valid email, private IP, AWS account ID, and UUID.
+    when: It is sanitized.
+    then: All values receive stable placeholders without ambiguous-term questions.
+
+  - id: AC-PRESERVE-001
+    verifies: [FR-SANITIZE-010, BR-DETECTION-003]
+    given: Text contains Kafka, MSK, Kubernetes, Production, UAT, and Terraform only.
+    when: It is sanitized with no explicit mappings.
+    then: The text remains unchanged.
+
+  - id: AC-PERSIST-001
+    verifies: [FR-PERSIST-001, FR-PERSIST-002]
+    given: A mapping exists and editor text is present.
+    when: The application closes and reopens.
+    then: The mapping remains and both editors start empty.
+
+  - id: AC-LOCAL-AI-001
+    verifies: [FR-LOCAL-AI-001, FR-LOCAL-AI-004]
+    given: Local AI is unavailable.
+    when: The user sanitizes text.
+    then: Deterministic and saved mappings work and no decision is auto-persisted.
+
+  - id: AC-SHUTDOWN-001
+    verifies: [FR-LOCAL-AI-006, FR-LOCAL-AI-007, FR-LIFECYCLE-004]
+    given: One child service was started by the app and another existed independently.
+    when: The application closes.
+    then: The owned child stops and the independent service remains running.
+
+  - id: AC-SECURITY-001
+    verifies: [SEC-NETWORK-001, SEC-NETWORK-002]
+    given: A configured model endpoint is remote or redirects remotely.
+    when: Connection validation runs.
+    then: The connection is rejected before text is sent.
+
+  - id: AC-UNKNOWN-001
+    verifies: [FR-RESTORE-004, FR-RESTORE-005]
+    given: Sanitized input contains UNKNOWN_99.
+    when: No active-workspace mapping exists.
+    then: UNKNOWN_99 remains unchanged and appears in the unresolved list.

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ai-sanitizer/specification.schema.json",
+  "title": "AI Sanitizer specification envelope",
+  "type": "object",
+  "required": ["specification"],
+  "properties": {
+    "specification": {
+      "type": "object",
+      "required": ["id", "version", "status"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^SPEC-[A-Z0-9-]+$"},
+        "version": {"type": ["string", "number"]},
+        "status": {"enum": ["draft", "approved", "deprecated"]}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

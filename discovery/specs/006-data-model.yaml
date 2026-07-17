@@ -1,0 +1,94 @@
+specification:
+  id: SPEC-DATA-MODEL
+  version: 0.1.0
+  status: draft
+
+database:
+  engine: SQLite
+  foreign_keys: enabled
+  journal_mode: WAL
+  migrations: versioned
+
+entities:
+  Workspace:
+    fields:
+      id: {type: uuid, primary_key: true}
+      name: {type: string, required: true, unique: true}
+      created_at: {type: datetime, required: true}
+      updated_at: {type: datetime, required: true}
+
+  Prefix:
+    fields:
+      id: {type: uuid, primary_key: true}
+      workspace_id: {type: uuid, required: true, references: Workspace.id}
+      value: {type: string, required: true, pattern: '^[A-Z]+(?:_[A-Z]+)*$'}
+      next_sequence: {type: integer, required: true, minimum: 1}
+    unique: [[workspace_id, value]]
+
+  Placeholder:
+    fields:
+      id: {type: uuid, primary_key: true}
+      workspace_id: {type: uuid, required: true, references: Workspace.id}
+      prefix_id: {type: uuid, required: true, references: Prefix.id}
+      sequence: {type: integer, required: true, minimum: 1}
+      rendered_value: {type: string, required: true}
+      created_at: {type: datetime, required: true}
+    unique: [[workspace_id, rendered_value], [workspace_id, prefix_id, sequence]]
+
+  Term:
+    fields:
+      id: {type: uuid, primary_key: true}
+      workspace_id: {type: uuid, required: true, references: Workspace.id}
+      original_value: {type: text, required: true}
+      normalized_lookup: {type: text, required: true}
+      policy: {type: enum, values: [ALWAYS, NEVER], required: true}
+      placeholder_id: {type: uuid, nullable: true, references: Placeholder.id}
+      is_principal: {type: boolean, nullable: true}
+      source: {type: enum, values: [detector, local_ai, manual, import], required: true}
+      created_at: {type: datetime, required: true}
+      updated_at: {type: datetime, required: true}
+      last_used_at: {type: datetime, nullable: true}
+      usage_count: {type: integer, required: true, default: 0}
+    unique: [[workspace_id, normalized_lookup]]
+    checks:
+      - ALWAYS requires placeholder_id
+      - NEVER requires placeholder_id to be null
+      - is_principal is null for NEVER
+
+  PendingDecision:
+    fields:
+      id: {type: uuid, primary_key: true}
+      workspace_id: {type: uuid, required: true, references: Workspace.id}
+      candidate: {type: text, required: true}
+      normalized_candidate: {type: text, required: true}
+      occurrence_count: {type: integer, required: true}
+      suggested_prefix: {type: string, nullable: true}
+      suggested_placeholder_id: {type: uuid, nullable: true, references: Placeholder.id}
+      confidence: {type: decimal, nullable: true, minimum: 0, maximum: 1}
+      created_at: {type: datetime, required: true}
+    unique: [[workspace_id, normalized_candidate]]
+
+  WorkspaceSetting:
+    fields:
+      workspace_id: {type: uuid, required: true, references: Workspace.id}
+      key: {type: string, required: true}
+      value_json: {type: json, required: true}
+    primary_key: [workspace_id, key]
+
+invariants:
+  - id: DATA-INV-001
+    rule: A Placeholder with two or more ALWAYS Terms has exactly one principal Term.
+  - id: DATA-INV-002
+    rule: A Placeholder with one ALWAYS Term may store null principal and resolves to that Term.
+  - id: DATA-INV-003
+    rule: Every referenced record has the same workspace_id as its owner.
+  - id: DATA-INV-004
+    rule: Editor and document contents are absent from the persistent schema.
+  - id: DATA-INV-005
+    rule: Prefix sequence allocation occurs inside an immediate transaction.
+
+indexes:
+  - [Term, workspace_id, normalized_lookup]
+  - [Term, workspace_id, placeholder_id]
+  - [Placeholder, workspace_id, rendered_value]
+  - [PendingDecision, workspace_id, normalized_candidate]

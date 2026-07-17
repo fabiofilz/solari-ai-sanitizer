@@ -1,0 +1,77 @@
+specification:
+  id: SPEC-USER-FLOWS
+  version: 0.1.0
+  status: draft
+
+flows:
+  - id: FLOW-FIRST-RUN-001
+    name: first_run
+    steps:
+      - Show privacy promise and local-processing status.
+      - Let the user create the first workspace.
+      - Detect local AI availability without requiring it.
+      - Open the bidirectional editor.
+    result: A usable deterministic workspace exists.
+
+  - id: FLOW-SANITIZE-001
+    name: sanitize_text
+    steps:
+      - User enters original text in the left editor.
+      - Apply NEVER decisions and existing mappings.
+      - Run deterministic detectors.
+      - Ask local AI for ambiguous suggestions when enabled.
+      - Group unresolved candidates into one pending item each.
+      - Render output using confirmed mappings while preserving other text.
+      - Update output after each decision.
+    result: Right editor contains sanitized text and unresolved items are visible.
+
+  - id: FLOW-DECIDE-001
+    name: decide_new_candidate
+    branches:
+      ALWAYS:
+        - Show suggested prefix and full placeholder preview.
+        - User confirms or edits prefix.
+        - Compare candidate with existing workspace mappings.
+        - If same entity is confirmed, reuse its placeholder.
+        - Otherwise allocate a new placeholder atomically.
+        - Persist and apply to every occurrence.
+      NEVER:
+        - Persist NEVER for the candidate.
+        - Preserve every occurrence unchanged.
+    result: The candidate is never asked again while the decision exists.
+
+  - id: FLOW-ALIAS-001
+    name: resolve_similar_term
+    steps:
+      - Show new term, closest existing original, placeholder, contexts, and confidence.
+      - Ask same entity or different entity.
+      - For different entity, create a distinct mapping.
+      - For same entity, attach the new original to the existing placeholder.
+      - When the second original is attached, require principal selection.
+    result: Identity and restoration behavior are explicit.
+
+  - id: FLOW-RESTORE-001
+    name: restore_text
+    steps:
+      - User enters sanitized text in the right editor.
+      - Resolve placeholders only in the active workspace.
+      - Replace each with its sole or principal original.
+      - Leave unknown placeholders unchanged and list them.
+      - Display a sensitive-output warning.
+    result: Left editor contains canonical restored text.
+
+  - id: FLOW-TERM-001
+    name: manage_terms
+    steps:
+      - Search or filter terms.
+      - Inspect original, placeholder, policy, aliases, principal, and metadata.
+      - Add, edit, merge, split, or delete with validation.
+      - Recompute current editor output after a committed change.
+
+  - id: FLOW-SHUTDOWN-001
+    name: close_application
+    steps:
+      - Finish or roll back active database transactions.
+      - Clear editor and prompt content from memory where practical.
+      - Stop application-owned backend and local-AI child processes.
+      - Leave independently started local services running.

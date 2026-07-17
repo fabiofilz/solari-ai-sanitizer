@@ -1,0 +1,9 @@
+id: EX-PRINCIPAL-ORIGINAL
+rules: [FR-ALIAS-005, FR-ALIAS-006, FR-RESTORE-003]
+workspace:
+  mappings:
+    - {original: Synthetic Bank, placeholder: COMPANY_1, policy: ALWAYS, principal: false}
+    - {original: Synthetic Bank SA, placeholder: COMPANY_1, policy: ALWAYS, principal: true}
+input: COMPANY_1 approved the architecture.
+expected:
+  restored: Synthetic Bank SA approved the architecture.

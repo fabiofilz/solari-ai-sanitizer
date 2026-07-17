@@ -1,0 +1,54 @@
+specification:
+  id: SPEC-SECURITY
+  version: 0.1.0
+  status: draft
+
+security_requirements:
+  - id: SEC-LOCAL-001
+    requirement: Original, restored, mapping, and local-AI prompt data must remain on device.
+  - id: SEC-NETWORK-001
+    requirement: External network access is denied by default; local AI connections must resolve to loopback.
+  - id: SEC-NETWORK-002
+    requirement: Redirects from a loopback endpoint are rejected.
+  - id: SEC-LOG-001
+    requirement: Logs contain event metadata and opaque IDs only, never editor text, originals, placeholders paired with originals, secrets, or prompts.
+  - id: SEC-TELEMETRY-001
+    requirement: Remote analytics, telemetry, and crash reporting are disabled.
+  - id: SEC-DATABASE-001
+    requirement: The database is stored with user-only filesystem permissions where supported.
+  - id: SEC-DATABASE-002
+    requirement: Database backups and exports receive the same sensitivity warning as the live database.
+  - id: SEC-EXPORT-001
+    requirement: Workspace export warns that mappings contain sensitive originals and requires explicit confirmation.
+  - id: SEC-CLIPBOARD-001
+    requirement: Copying restored text displays a warning; automatic clipboard history is not implemented.
+  - id: SEC-RENDERER-001
+    requirement: Electron renderer has no Node integration and uses context isolation and a minimal validated IPC bridge.
+  - id: SEC-IPC-001
+    requirement: IPC and local API inputs are schema validated, size limited, and treated as untrusted.
+  - id: SEC-PROMPT-001
+    requirement: Local-model input is treated as data and prompt injection cannot invoke application actions.
+  - id: SEC-SECRETS-001
+    requirement: Detected secrets are replaced but never written to logs, diagnostics, fixtures, or error reports.
+  - id: SEC-SUPPLY-001
+    requirement: Dependencies use lockfiles, automated vulnerability checks, and reproducible release configuration.
+  - id: SEC-UPDATE-001
+    requirement: Update checks never include workspace identifiers, content, mappings, or machine document paths.
+  - id: SEC-DELETE-001
+    requirement: Workspace deletion removes its database records transactionally and reports local backup implications.
+  - id: SEC-TESTDATA-001
+    requirement: Repository content, tests, screenshots, and examples use synthetic data only.
+
+threats:
+  - id: THREAT-001
+    name: accidental_external_disclosure
+    mitigations: [SEC-LOCAL-001, SEC-NETWORK-001, SEC-LOG-001, SEC-TELEMETRY-001]
+  - id: THREAT-002
+    name: cross_workspace_leakage
+    mitigations: [BR-WORKSPACE-001, BR-WORKSPACE-002, DATA-INV-003]
+  - id: THREAT-003
+    name: malicious_document_prompt_injection
+    mitigations: [SEC-PROMPT-001, FR-LOCAL-AI-004]
+  - id: THREAT-004
+    name: local_database_exposure
+    mitigations: [SEC-DATABASE-001, SEC-DATABASE-002, SEC-EXPORT-001]

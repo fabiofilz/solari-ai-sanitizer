@@ -1,0 +1,647 @@
+specification:
+  id: SPEC-FUNCTIONAL-REQUIREMENTS
+  version: 0.1.0
+  status: draft
+  title: AI Sanitizer Functional Requirements
+
+functional_requirements:
+  workspace_management:
+    - id: FR-WORKSPACE-001
+      priority: must
+      statement: >-
+        The user must be able to create a workspace with a unique name.
+
+    - id: FR-WORKSPACE-002
+      priority: must
+      statement: >-
+        The user must be able to open an existing workspace.
+
+    - id: FR-WORKSPACE-003
+      priority: must
+      statement: >-
+        The application must reopen the last active workspace on startup when
+        that workspace still exists.
+
+    - id: FR-WORKSPACE-004
+      priority: must
+      statement: >-
+        The user must be able to rename a workspace without changing its
+        mappings, policies, prefixes, counters, or settings.
+
+    - id: FR-WORKSPACE-005
+      priority: must
+      statement: >-
+        The user must be able to delete a workspace after an explicit
+        confirmation describing that its local mappings and settings will be
+        removed.
+
+    - id: FR-WORKSPACE-006
+      priority: should
+      statement: >-
+        The user must be able to duplicate a workspace under a new name,
+        including its mappings, policies, prefixes, counters, and settings.
+
+    - id: FR-WORKSPACE-007
+      priority: should
+      statement: >-
+        The user must be able to export an encrypted or explicitly
+        security-warned workspace backup for transfer to another device.
+
+    - id: FR-WORKSPACE-008
+      priority: should
+      statement: >-
+        The user must be able to import a compatible workspace backup without
+        overwriting an existing workspace silently.
+
+    - id: FR-WORKSPACE-009
+      priority: must
+      statement: >-
+        Data from one workspace must never be used to sanitize, restore,
+        suggest, search, or display information in another workspace.
+
+  editor:
+    - id: FR-EDITOR-001
+      priority: must
+      statement: >-
+        The main editor must display original text on the left and sanitized
+        text on the right.
+
+    - id: FR-EDITOR-002
+      priority: must
+      statement: >-
+        Pasting or editing original text must update sanitized output after a
+        configurable debounce period.
+
+    - id: FR-EDITOR-003
+      priority: must
+      statement: >-
+        Pasting sanitized text into the sanitized editor must update the
+        original editor by restoring recognized placeholders.
+
+    - id: FR-EDITOR-004
+      priority: must
+      statement: >-
+        The application must prevent feedback loops when one editor updates the
+        other programmatically.
+
+    - id: FR-EDITOR-005
+      priority: must
+      statement: >-
+        The user must be able to clear both editors without deleting mappings or
+        workspace decisions.
+
+    - id: FR-EDITOR-006
+      priority: must
+      statement: >-
+        The user must be able to copy sanitized text to the system clipboard.
+
+    - id: FR-EDITOR-007
+      priority: must
+      statement: >-
+        The user must be able to copy restored text to the system clipboard.
+
+    - id: FR-EDITOR-008
+      priority: should
+      statement: >-
+        The editors should support undo, redo, search, replace, line numbers,
+        large text, and common technical text formats.
+
+    - id: FR-EDITOR-009
+      priority: should
+      statement: >-
+        The editors should offer synchronized scrolling when line structure
+        remains compatible.
+
+    - id: FR-EDITOR-010
+      priority: must
+      statement: >-
+        Unresolved pending decisions must be visible without blocking unrelated
+        editor operations.
+
+    - id: FR-EDITOR-011
+      priority: must
+      statement: >-
+        Changes caused by resolving a pending decision must update every
+        occurrence of that candidate in the current text.
+
+    - id: FR-EDITOR-012
+      priority: must
+      statement: >-
+        Editor contents must not be persisted automatically between application
+        sessions.
+
+  sanitization:
+    - id: FR-SANITIZE-001
+      priority: must
+      statement: >-
+        The sanitization engine must inspect the complete input using the active
+        workspace only.
+
+    - id: FR-SANITIZE-002
+      priority: must
+      statement: >-
+        The engine must consult persisted NEVER decisions before proposing or
+        applying replacements.
+
+    - id: FR-SANITIZE-003
+      priority: must
+      statement: >-
+        The engine must consult existing mappings before creating a new
+        placeholder.
+
+    - id: FR-SANITIZE-004
+      priority: must
+      statement: >-
+        Every exact occurrence of one recognized original value must receive the
+        same placeholder within the complete output.
+
+    - id: FR-SANITIZE-005
+      priority: must
+      statement: >-
+        Existing longer original values must be matched before shorter
+        overlapping original values.
+
+    - id: FR-SANITIZE-006
+      priority: must
+      statement: >-
+        Replacements must preserve text outside the matched value, including
+        whitespace, punctuation, line endings, and surrounding code.
+
+    - id: FR-SANITIZE-007
+      priority: must
+      statement: >-
+        Deterministic sensitive values must be sanitized automatically without a
+        user question when the detector result is valid and unambiguous.
+
+    - id: FR-SANITIZE-008
+      priority: must
+      statement: >-
+        Ambiguous candidates without a saved policy must generate one pending
+        decision per normalized candidate, not one decision per occurrence.
+
+    - id: FR-SANITIZE-009
+      priority: must
+      statement: >-
+        Sanitization must be recalculated after a mapping, policy, prefix, alias,
+        or principal original changes.
+
+    - id: FR-SANITIZE-010
+      priority: must
+      statement: >-
+        Public technology names and generic environment labels must remain
+        unchanged unless they contain a separately detected sensitive value or
+        have an explicit ALWAYS mapping.
+
+    - id: FR-SANITIZE-011
+      priority: must
+      statement: >-
+        The application must show a count of replacements grouped by
+        placeholder or detector category.
+
+    - id: FR-SANITIZE-012
+      priority: must
+      statement: >-
+        If sanitization cannot complete safely, the application must preserve
+        the input, identify the error, and avoid partial persistence.
+
+  restoration:
+    - id: FR-RESTORE-001
+      priority: must
+      statement: >-
+        The restoration engine must recognize placeholders belonging to the
+        active workspace.
+
+    - id: FR-RESTORE-002
+      priority: must
+      statement: >-
+        A placeholder with exactly one original value must restore to that
+        original value.
+
+    - id: FR-RESTORE-003
+      priority: must
+      statement: >-
+        A placeholder with multiple original values must restore only to its
+        selected principal original.
+
+    - id: FR-RESTORE-004
+      priority: must
+      statement: >-
+        An unknown placeholder must remain unchanged and be reported as
+        unresolved.
+
+    - id: FR-RESTORE-005
+      priority: must
+      statement: >-
+        Restoration must not search other workspaces for an unknown placeholder.
+
+    - id: FR-RESTORE-006
+      priority: must
+      statement: >-
+        Restoration must preserve all text outside recognized placeholders.
+
+    - id: FR-RESTORE-007
+      priority: must
+      statement: >-
+        The application must clearly warn that restored output contains
+        sensitive information and must not be copied to a public LLM.
+
+  decisions:
+    - id: FR-DECISION-001
+      priority: must
+      statement: >-
+        An ambiguous candidate must allow exactly two policy decisions: ALWAYS
+        and NEVER.
+
+    - id: FR-DECISION-002
+      priority: must
+      statement: >-
+        The application must not provide a temporary or only-this-time policy.
+
+    - id: FR-DECISION-003
+      priority: must
+      statement: >-
+        An ALWAYS decision must require a confirmed prefix or an existing
+        placeholder.
+
+    - id: FR-DECISION-004
+      priority: must
+      statement: >-
+        A NEVER decision must preserve the original text and persist that
+        decision in the active workspace.
+
+    - id: FR-DECISION-005
+      priority: must
+      statement: >-
+        A saved ALWAYS or NEVER decision must prevent future questions for the
+        same normalized original value in the same workspace.
+
+    - id: FR-DECISION-006
+      priority: must
+      statement: >-
+        Editing or deleting a saved decision may cause the term to be evaluated
+        again during subsequent sanitization.
+
+    - id: FR-DECISION-007
+      priority: must
+      statement: >-
+        The pending-decision screen must allow decisions to be reviewed in a
+        list without opening one modal dialog per occurrence.
+
+    - id: FR-DECISION-008
+      priority: must
+      statement: >-
+        Pending decisions must display the candidate, occurrence count, local
+        context preview, suggestion, and confidence when available.
+
+  placeholders_and_prefixes:
+    - id: FR-PREFIX-001
+      priority: must
+      statement: >-
+        The local AI or deterministic detector may suggest a prefix, but the
+        user must be able to change it before confirming an ambiguous ALWAYS
+        decision.
+
+    - id: FR-PREFIX-002
+      priority: must
+      statement: >-
+        A prefix may contain only uppercase ASCII letters separated by single
+        underscores after normalization.
+
+    - id: FR-PREFIX-003
+      priority: must
+      statement: >-
+        The application must remove leading and trailing underscores from a
+        prefix.
+
+    - id: FR-PREFIX-004
+      priority: must
+      statement: >-
+        The application must collapse multiple consecutive underscores into one
+        underscore.
+
+    - id: FR-PREFIX-005
+      priority: must
+      statement: >-
+        The application must convert spaces and hyphens to underscores, remove
+        diacritics, and convert letters to uppercase before validating a prefix.
+
+    - id: FR-PREFIX-006
+      priority: must
+      statement: >-
+        The user must never enter or edit the numeric sequence directly.
+
+    - id: FR-PREFIX-007
+      priority: must
+      statement: >-
+        The system must append exactly one underscore and the next positive
+        sequence to a normalized prefix.
+
+    - id: FR-PREFIX-008
+      priority: must
+      statement: >-
+        Generated placeholders must be unique within a workspace.
+
+    - id: FR-PREFIX-009
+      priority: must
+      statement: >-
+        Sequence allocation must be atomic and must not reuse a deleted
+        sequence automatically.
+
+    - id: FR-PREFIX-010
+      priority: must
+      statement: >-
+        The interface must show a complete placeholder preview before an
+        ambiguous ALWAYS decision is confirmed.
+
+    - id: FR-PREFIX-011
+      priority: should
+      statement: >-
+        Previously used prefixes must be available for search and selection.
+
+    - id: FR-PREFIX-012
+      priority: must
+      statement: >-
+        Prefix renaming must require confirmation and must describe its impact
+        on existing placeholders and sanitized conversations.
+
+  aliases_and_similarity:
+    - id: FR-ALIAS-001
+      priority: must
+      statement: >-
+        A new candidate similar to an existing original must show the suggested
+        existing placeholder and confidence score.
+
+    - id: FR-ALIAS-002
+      priority: must
+      statement: >-
+        The user must decide whether the candidate represents the same entity or
+        a different entity.
+
+    - id: FR-ALIAS-003
+      priority: must
+      statement: >-
+        Choosing same entity must add the candidate as another original value
+        for the existing placeholder.
+
+    - id: FR-ALIAS-004
+      priority: must
+      statement: >-
+        Choosing different entity must generate or select a different
+        placeholder.
+
+    - id: FR-ALIAS-005
+      priority: must
+      statement: >-
+        When a placeholder changes from one original value to multiple original
+        values, the user must select the principal original.
+
+    - id: FR-ALIAS-006
+      priority: must
+      statement: >-
+        Exactly one principal original must exist whenever a placeholder has
+        multiple original values.
+
+    - id: FR-ALIAS-007
+      priority: must
+      statement: >-
+        A placeholder with one original value does not require a visible
+        principal selection.
+
+    - id: FR-ALIAS-008
+      priority: must
+      statement: >-
+        The user must be able to change the principal original later.
+
+    - id: FR-ALIAS-009
+      priority: must
+      statement: >-
+        Confidence is advisory and must not automatically merge distinct
+        originals.
+
+    - id: FR-ALIAS-010
+      priority: must
+      statement: >-
+        Similarity suggestions must use only information stored in the active
+        workspace.
+
+  term_management:
+    - id: FR-TERM-001
+      priority: must
+      statement: >-
+        The application must provide a searchable terms screen scoped to the
+        active workspace.
+
+    - id: FR-TERM-002
+      priority: must
+      statement: >-
+        Search must match original values, placeholders, prefixes, and policies.
+
+    - id: FR-TERM-003
+      priority: must
+      statement: >-
+        The user must be able to add an ALWAYS mapping manually.
+
+    - id: FR-TERM-004
+      priority: must
+      statement: >-
+        The user must be able to add a NEVER decision manually.
+
+    - id: FR-TERM-005
+      priority: must
+      statement: >-
+        The user must be able to edit an original value, prefix, policy, alias
+        relationship, and principal selection subject to business constraints.
+
+    - id: FR-TERM-006
+      priority: must
+      statement: >-
+        The user must be able to remove a term after seeing the impact and
+        confirming the operation.
+
+    - id: FR-TERM-007
+      priority: must
+      statement: >-
+        The user must be able to merge mappings by selecting the surviving
+        placeholder and principal original.
+
+    - id: FR-TERM-008
+      priority: should
+      statement: >-
+        The user should be able to split an alias into a new placeholder.
+
+    - id: FR-TERM-009
+      priority: must
+      statement: >-
+        The terms screen must identify the principal original only when a
+        placeholder has multiple originals.
+
+    - id: FR-TERM-010
+      priority: should
+      statement: >-
+        The terms screen should display creation date, last-used date, and usage
+        count without retaining document content.
+
+  local_ai:
+    - id: FR-LOCAL-AI-001
+      priority: must
+      statement: >-
+        Local AI assistance must be optional and the deterministic application
+        must remain usable when it is disabled or unavailable.
+
+    - id: FR-LOCAL-AI-002
+      priority: must
+      statement: >-
+        Original text may be sent only to a model endpoint verified as a
+        loopback local address.
+
+    - id: FR-LOCAL-AI-003
+      priority: must
+      statement: >-
+        The local AI may suggest ambiguous candidates, prefixes, and possible
+        aliases.
+
+    - id: FR-LOCAL-AI-004
+      priority: must
+      statement: >-
+        Local AI suggestions must never persist ALWAYS, NEVER, alias, principal,
+        merge, or delete decisions without user confirmation.
+
+    - id: FR-LOCAL-AI-005
+      priority: must
+      statement: >-
+        The application must show whether local AI is ready, starting,
+        unavailable, disabled, or failed.
+
+    - id: FR-LOCAL-AI-006
+      priority: must
+      statement: >-
+        Closing the application must stop any application-owned local AI process
+        that the application started.
+
+    - id: FR-LOCAL-AI-007
+      priority: must
+      statement: >-
+        The application must not stop a local AI service that was already
+        running independently before the application opened.
+
+    - id: FR-LOCAL-AI-008
+      priority: should
+      statement: >-
+        The user should be able to select an installed compatible local model.
+
+  persistence:
+    - id: FR-PERSIST-001
+      priority: must
+      statement: >-
+        Workspaces, mappings, policies, prefixes, counters, aliases, principal
+        selections, and settings must persist after the application closes.
+
+    - id: FR-PERSIST-002
+      priority: must
+      statement: >-
+        Editor content and document history must not persist by default.
+
+    - id: FR-PERSIST-003
+      priority: must
+      statement: >-
+        Persistence operations that change related records must be transactional.
+
+    - id: FR-PERSIST-004
+      priority: must
+      statement: >-
+        The application must create timestamped local database backups before
+        destructive schema migrations.
+
+    - id: FR-PERSIST-005
+      priority: must
+      statement: >-
+        A failed migration must leave the previous database recoverable.
+
+  application_lifecycle:
+    - id: FR-LIFECYCLE-001
+      priority: must
+      statement: >-
+        The user must be able to launch the application using the standard
+        desktop mechanism for Windows or macOS.
+
+    - id: FR-LIFECYCLE-002
+      priority: must
+      statement: >-
+        The application must start its required local backend automatically.
+
+    - id: FR-LIFECYCLE-003
+      priority: must
+      statement: >-
+        The application must display a useful recovery screen if the local
+        backend cannot start.
+
+    - id: FR-LIFECYCLE-004
+      priority: must
+      statement: >-
+        Closing the desktop application must stop every child service that the
+        application started.
+
+    - id: FR-LIFECYCLE-005
+      priority: must
+      statement: >-
+        The application must prevent multiple instances from corrupting the same
+        local database.
+
+    - id: FR-LIFECYCLE-006
+      priority: should
+      statement: >-
+        Application updates must never upload workspace content, mapping data,
+        or editor text.
+
+  file_support:
+    - id: FR-FILE-001
+      priority: should
+      statement: >-
+        The user should be able to import supported text-based files into the
+        original editor.
+
+    - id: FR-FILE-002
+      priority: should
+      statement: >-
+        Supported initial formats should include TXT, Markdown, JSON, YAML, XML,
+        properties, environment files, and Terraform text files.
+
+    - id: FR-FILE-003
+      priority: should
+      statement: >-
+        Importing a file must not automatically persist its original content.
+
+    - id: FR-FILE-004
+      priority: should
+      statement: >-
+        The user should be able to export sanitized text without exporting
+        mappings or original values.
+
+    - id: FR-FILE-005
+      priority: must
+      statement: >-
+        Unsupported binary files must be rejected without attempting to upload
+        or externally convert them.
+
+  accessibility_and_localization:
+    - id: FR-ACCESS-001
+      priority: must
+      statement: >-
+        All primary functionality must be operable using a keyboard.
+
+    - id: FR-ACCESS-002
+      priority: must
+      statement: >-
+        Controls, decisions, errors, and confidence indicators must not depend
+        only on color.
+
+    - id: FR-ACCESS-003
+      priority: must
+      statement: >-
+        Interactive controls must have accessible names and visible focus.
+
+    - id: FR-ACCESS-004
+      priority: should
+      statement: >-
+        The initial application should support English and Brazilian Portuguese
+        interface text through externalized localization resources.

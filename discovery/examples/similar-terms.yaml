@@ -1,0 +1,12 @@
+id: EX-SIMILAR-TERMS
+rules: [FR-ALIAS-001, FR-ALIAS-002, FR-ALIAS-009]
+workspace:
+  mappings:
+    - {original: Synthetic Bank, placeholder: COMPANY_1, policy: ALWAYS}
+candidate: Synthetic Bank SA
+local_ai_suggestion:
+  possible_existing_original: Synthetic Bank
+  confidence: 0.97
+expected:
+  user_must_choose: [same_entity, different_entity]
+  automatic_merge: false

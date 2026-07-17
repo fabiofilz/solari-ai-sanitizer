@@ -1,0 +1,60 @@
+specification:
+  id: SPEC-BUSINESS-RULES
+  version: 0.1.0
+  status: draft
+
+business_rules:
+  - id: BR-WORKSPACE-001
+    rule: Every policy, mapping, prefix counter, alias, and setting belongs to exactly one workspace.
+  - id: BR-WORKSPACE-002
+    rule: Cross-workspace lookup, suggestion, restoration, and sequence allocation are forbidden.
+  - id: BR-POLICY-001
+    rule: The only term policies are ALWAYS and NEVER.
+  - id: BR-POLICY-002
+    rule: A persisted policy is applied without asking again until edited or deleted.
+  - id: BR-POLICY-003
+    rule: One decision applies to all exact occurrences of the normalized candidate in the current input.
+  - id: BR-MAPPING-001
+    rule: Lookup existing mappings before allocating a placeholder.
+  - id: BR-MAPPING-002
+    rule: An original value has at most one active policy and one placeholder per workspace.
+  - id: BR-MAPPING-003
+    rule: Multiple originals may share a placeholder only after explicit same-entity confirmation.
+  - id: BR-MAPPING-004
+    rule: Match longer originals before shorter overlapping originals.
+  - id: BR-PRINCIPAL-001
+    rule: A placeholder with one original restores to that original and needs no explicit principal.
+  - id: BR-PRINCIPAL-002
+    rule: A placeholder with multiple originals must have exactly one principal original.
+  - id: BR-PRINCIPAL-003
+    rule: Restoration of an aliased placeholder always uses its principal original.
+  - id: BR-PREFIX-001
+    rule: Normalize prefixes by removing diacritics, uppercasing, converting spaces and hyphens to underscores, collapsing underscores, and trimming edge underscores.
+  - id: BR-PREFIX-002
+    rule: A normalized prefix must match ^[A-Z]+(?:_[A-Z]+)*$.
+  - id: BR-PREFIX-003
+    rule: The system, never the user, allocates a positive integer sequence.
+  - id: BR-PREFIX-004
+    rule: A placeholder is prefix plus exactly one underscore plus sequence.
+  - id: BR-PREFIX-005
+    rule: Sequence allocation is atomic, monotonic per workspace and prefix, and deleted numbers are not reused.
+  - id: BR-DETECTION-001
+    rule: Valid deterministic high-risk matches are sanitized automatically.
+  - id: BR-DETECTION-002
+    rule: Ambiguous semantic candidates require a user decision.
+  - id: BR-DETECTION-003
+    rule: Generic technologies and environment labels are preserved unless an embedded sensitive value or explicit ALWAYS mapping matches.
+  - id: BR-SIMILARITY-001
+    rule: Similarity confidence is advisory and never causes an automatic alias merge.
+  - id: BR-RESTORE-001
+    rule: Unknown placeholders remain unchanged and are reported; other workspaces are never searched.
+  - id: BR-PERSIST-001
+    rule: Mappings and decisions persist, but editor text and document history do not persist by default.
+  - id: BR-TRANSACTION-001
+    rule: Mapping, alias, principal, policy, and counter changes commit atomically.
+  - id: BR-DELETE-001
+    rule: Destructive term and workspace operations require impact disclosure and confirmation.
+  - id: BR-AI-001
+    rule: Local AI may suggest but may not persist policy, alias, principal, merge, delete, or prefix decisions without user confirmation.
+  - id: BR-LIFECYCLE-001
+    rule: On exit, stop only processes started and owned by this application.

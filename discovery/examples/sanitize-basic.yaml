@@ -1,0 +1,9 @@
+id: EX-SANITIZE-BASIC
+rules: [FR-SANITIZE-003, FR-SANITIZE-004]
+workspace:
+  mappings:
+    - {original: Synthetic Bank, placeholder: COMPANY_1, policy: ALWAYS}
+input: Synthetic Bank uses PostgreSQL.
+expected:
+  sanitized: COMPANY_1 uses PostgreSQL.
+  pending: []

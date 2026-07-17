@@ -1,0 +1,71 @@
+specification:
+  id: SPEC-UI
+  version: 0.1.0
+  status: draft
+
+ui:
+  design:
+    style: professional_desktop_tool
+    responsive_minimum_width: 1024
+    themes: [light, dark, system]
+    accessibility:
+      keyboard_complete: true
+      visible_focus: true
+      color_not_only_signal: true
+      screen_reader_labels: true
+
+  shell:
+    top_bar:
+      items: [workspace_selector, local_processing_badge, local_ai_status, settings]
+    navigation:
+      items: [editor, pending_decisions, terms, workspace_settings]
+    status_bar:
+      items: [replacement_count, pending_count, unresolved_placeholder_count, save_state]
+
+  screens:
+    - id: UI-WORKSPACES-001
+      name: workspaces
+      capabilities: [create, open, rename, duplicate, export, import, delete]
+      delete_confirmation_requires_workspace_name: true
+
+    - id: UI-EDITOR-001
+      name: bidirectional_editor
+      layout:
+        left: original_or_restored_text
+        right: sanitized_text
+        default_split: equal
+      actions: [copy_original, copy_sanitized, clear_both, search, replace, toggle_sync_scroll]
+      behavior:
+        realtime_debounced: true
+        show_direction_of_last_user_edit: true
+        prevent_update_loops: true
+        restored_side_warning: Contains sensitive local information
+
+    - id: UI-PENDING-001
+      name: pending_decisions
+      presentation: non_blocking_review_list
+      fields: [candidate, occurrence_count, context_samples, suggested_prefix, suggested_match, confidence]
+      actions: [always, never, same_entity, different_entity, confirm_prefix, choose_principal]
+      forbidden_action: only_this_time
+
+    - id: UI-TERMS-001
+      name: terms
+      search_fields: [original, placeholder, prefix, policy]
+      filters: [ALWAYS, NEVER, has_aliases, needs_review]
+      columns: [original, placeholder, policy, principal, aliases, usage_count, last_used]
+      actions: [add, edit, delete, merge, split, change_principal]
+      principal_visibility: only_when_multiple_originals
+
+    - id: UI-SETTINGS-001
+      name: settings
+      sections: [appearance, language, local_ai, editor, workspace_backup, privacy]
+
+  feedback:
+    confidence:
+      format: percentage
+      must_include_text_label: true
+      labels: [low, medium, high]
+    errors:
+      requirements: [plain_language, no_sensitive_content, recovery_action]
+    destructive_changes:
+      requirements: [impact_summary, explicit_confirmation]

@@ -1,0 +1,12 @@
+id: EX-BIDIRECTIONAL-EDITING
+rules: [FR-EDITOR-002, FR-EDITOR-003, FR-EDITOR-004]
+mapping: {original: Synthetic Bank, placeholder: COMPANY_1}
+scenarios:
+  - edit_side: original
+    input: Synthetic Bank uses Kafka.
+    opposite_output: COMPANY_1 uses Kafka.
+  - edit_side: sanitized
+    input: COMPANY_1 uses MSK.
+    opposite_output: Synthetic Bank uses MSK.
+expected:
+  feedback_loop: false
