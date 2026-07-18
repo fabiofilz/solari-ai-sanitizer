@@ -67,3 +67,6 @@ Thumbs.db
 # Miscellaneous
 *.log
 *.tmp
+
+# Spec Kit local extension catalog cache
+.specify/extensions/.cache/
