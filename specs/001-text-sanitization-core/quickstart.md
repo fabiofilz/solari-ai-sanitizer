@@ -90,9 +90,11 @@ npm run test:e2e   # Playwright: full user-story acceptance scenarios below
    **Expected**: a distinct placeholder is created regardless of any displayed
    similarity score (acceptance scenario 3).
 4. With the two-alias placeholder from step 2 (principal = `Synthetic Bank`),
-   edit the principal term's policy to NEVER (`terms:edit`, no
-   `replacementPrincipalTermId` supplied). **Expected**: the call succeeds with
-   **no** `PRINCIPAL_REASSIGNMENT_REQUIRED` error (acceptance scenario 6–8;
+   edit the principal term's policy to NEVER via `terms:edit` (request:
+   `{ workspaceId, termId, policy: "NEVER" }` — `terms:edit` has no
+   principal-related field at all; changing a principal is a separate call,
+   see step 5). **Expected**: the call succeeds with **no**
+   `PRINCIPAL_REASSIGNMENT_REQUIRED` error (acceptance scenario 6–8;
    `contracts/terms.md`). Then:
    - Sanitize new text containing `Synthetic Bank`: it is left unchanged (NEVER
      is now active for future sanitization).
@@ -102,8 +104,11 @@ npm run test:e2e   # Playwright: full user-story acceptance scenarios below
 5. Now attempt `terms:remove` on that same term. **Expected**: this time the
    call *does* return `PRINCIPAL_REASSIGNMENT_REQUIRED`, since removal — unlike
    the policy edit in step 4 — would actually detach the principal while
-   `Synthetic Bank SA` remains. Call `terms:set-principal` to promote `Synthetic
-   Bank SA`, then retry `terms:remove`. **Expected**: it now succeeds.
+   `Synthetic Bank SA` remains. `terms:remove` itself takes no replacement-
+   principal parameter either: call `terms:set-principal`
+   (`{ workspaceId, placeholderValue, principalTermId }`) to promote `Synthetic
+   Bank SA` to principal first, then retry `terms:remove`. **Expected**: it now
+   succeeds.
 
 ## Scenario 5 — Workspace isolation (User Story 5, P5)
 
