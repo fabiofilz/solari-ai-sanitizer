@@ -312,9 +312,7 @@ why this stays well inside budget.
 **API note**: this section uses Electron's *asynchronous* `safeStorage` API —
 `safeStorage.isAsyncEncryptionAvailable()`, `safeStorage.encryptStringAsync(plainText)`,
 and `safeStorage.decryptStringAsync(encrypted)` — confirmed against Electron's
-official documentation at planning time (2026-07-18). `safeStorage` has **no**
-`encryptBuffer`/`decryptBuffer` methods; an earlier revision of this document
-incorrectly referenced them and has been corrected. The synchronous
+official documentation at planning time (2026-07-18). The synchronous
 `encryptString`/`decryptString` pair also exists but is deliberately not used
 here: it can block on OS keychain/DPAPI access, which would violate "must not
 block application startup or the main event loop" below. Because the exact

@@ -204,9 +204,7 @@ ones:
 **Third Phase-1 revision re-check** (technical-accuracy pass, 2026-07-18): still
 PASS on all seven principles. This revision **corrected** factual errors rather
 than adding new scope:
-- `safeStorage.encryptBuffer`/`decryptBuffer` (used throughout the prior
-  revision of research.md #10) do not exist on Electron's `safeStorage` API and
-  have been replaced everywhere with the real asynchronous methods —
+- research.md #10 now specifies Electron's asynchronous `safeStorage` API —
   `isAsyncEncryptionAvailable()`, `encryptStringAsync()`,
   `decryptStringAsync()` — confirmed against Electron's official documentation
   at planning time, with a documented Base64 DEK-encoding step and an explicit
