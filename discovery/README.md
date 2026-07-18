@@ -1,8 +1,8 @@
-# AI Sanitizer
+# Solari AI Sanitizer
 
 A local-first desktop application that sanitizes sensitive information before text is shared with a public Large Language Model.
 
-AI Sanitizer preserves useful technical context while replacing customer identities, credentials, personal data, infrastructure identifiers and workspace-defined confidential terms.
+Solari AI Sanitizer preserves useful technical context while replacing customer identities, credentials, personal data, infrastructure identifiers and workspace-defined confidential terms.
 
 It can also translate sanitized text back to canonical original values using a persistent workspace-specific dictionary.
 
@@ -12,7 +12,7 @@ Architects, developers and consultants frequently need assistance from online AI
 
 Manual replacement is slow and inconsistent. The same company, system or identifier may receive different placeholders across documents or days, causing the LLM to interpret them as different entities.
 
-AI Sanitizer solves this through persistent and isolated translation dictionaries.
+Solari AI Sanitizer solves this through persistent and isolated translation dictionaries.
 
 ## Core capabilities
 

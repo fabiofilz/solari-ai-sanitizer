@@ -1,6 +1,6 @@
 # Contributing
 
-AI Sanitizer follows Specification-Driven Development.
+Solari AI Sanitizer follows Specification-Driven Development.
 
 ## Required workflow
 

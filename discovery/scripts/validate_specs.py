@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate AI Sanitizer specification syntax, IDs, and references."""
+"""Validate Solari AI Sanitizer specification syntax, IDs, and references."""
 
 from __future__ import annotations
 

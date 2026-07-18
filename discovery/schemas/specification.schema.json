@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/ai-sanitizer/specification.schema.json",
-  "title": "AI Sanitizer specification envelope",
+  "$id": "https://example.invalid/solari-ai-sanitizer/specification.schema.json",
+  "title": "Solari AI Sanitizer specification envelope",
   "type": "object",
   "required": ["specification"],
   "properties": {

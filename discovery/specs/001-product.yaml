@@ -2,12 +2,12 @@ specification:
   id: SPEC-PRODUCT
   version: 0.1.0
   status: draft
-  title: AI Sanitizer Product Specification
+  title: Solari AI Sanitizer Product Specification
   language: en
   source_of_truth: true
 
 product:
-  name: AI Sanitizer
+  name: Solari AI Sanitizer
   category: local_first_desktop_application
 
   summary: >-
