@@ -74,7 +74,7 @@ Pre-ratification corrections applied to the first-draft body (version stays
 Deferred TODOs: none
 -->
 
-# AI Sanitizer Constitution
+# Solari AI Sanitizer Constitution
 
 ## Core Principles
 
@@ -294,4 +294,4 @@ complete. Violations require documented justification.
 **Versioning policy**: Semantic versioning as defined above. The version
 line at the bottom of this file is the single authoritative version record.
 
-**Version**: 1.0.0 | **Ratified**: 2026-07-17 | **Last Amended**: 2026-07-17
+**Version**: 1.0.1 | **Ratified**: 2026-07-17 | **Last Amended**: 2026-07-18

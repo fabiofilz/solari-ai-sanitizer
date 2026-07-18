@@ -1,4 +1,4 @@
-# AI Sanitizer — Claude Code Instructions
+# Solari AI Sanitizer — Claude Code Instructions
 
 Before planning or changing application behavior, read:
 

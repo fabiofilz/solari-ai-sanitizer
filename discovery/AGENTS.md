@@ -1,4 +1,4 @@
-# AI Sanitizer — Coding Agent Instructions
+# Solari AI Sanitizer — Coding Agent Instructions
 
 Before planning or changing application behavior, read:
 

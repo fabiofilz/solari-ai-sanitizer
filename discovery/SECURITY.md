@@ -2,7 +2,7 @@
 
 ## Security model
 
-AI Sanitizer is a local-first desktop application.
+Solari AI Sanitizer is a local-first desktop application.
 
 Original text, restored text, mappings and local-AI prompts must remain on the user's device. The application must not provide cloud processing, remote telemetry or external crash reporting.
 

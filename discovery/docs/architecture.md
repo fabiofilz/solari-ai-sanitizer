@@ -1,6 +1,6 @@
 # Architecture
 
-AI Sanitizer is a local-first desktop system. Electron owns the window and process lifecycle; React and Monaco provide the UI; a bundled Python/FastAPI sidecar contains domain logic; SQLite stores isolated workspace dictionaries; Ollama is optional local assistance.
+Solari AI Sanitizer is a local-first desktop system. Electron owns the window and process lifecycle; React and Monaco provide the UI; a bundled Python/FastAPI sidecar contains domain logic; SQLite stores isolated workspace dictionaries; Ollama is optional local assistance.
 
 The renderer cannot access Node or the database directly. It uses a minimal preload bridge to the Electron main process and an authenticated loopback API. The backend rejects non-loopback clients and never logs request bodies.
 

@@ -2,7 +2,7 @@ specification:
   id: SPEC-FUNCTIONAL-REQUIREMENTS
   version: 0.1.0
   status: draft
-  title: AI Sanitizer Functional Requirements
+  title: Solari AI Sanitizer Functional Requirements
 
 functional_requirements:
   workspace_management:

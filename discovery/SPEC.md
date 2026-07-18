@@ -1,6 +1,6 @@
-# AI Sanitizer Specification
+# Solari AI Sanitizer Specification
 
-AI Sanitizer follows Specification-Driven Development.
+Solari AI Sanitizer follows Specification-Driven Development.
 
 The YAML files under `specs/` are the authoritative product contract. Application code, database migrations, automated tests and user documentation are derived from that contract.
 
