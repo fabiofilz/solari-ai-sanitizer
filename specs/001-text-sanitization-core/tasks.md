@@ -65,9 +65,9 @@ Single-project Electron application per plan.md's Project Structure:
 
 ### Persistence schema
 
-- [ ] T018 [P] Define the registry.sqlite schema and migration for the RegistryKey and Workspace tables per data-model.md in src/main/persistence/registry-schema.ts
-- [ ] T019 [P] Define the per-workspace sqlite schema and migration for the Prefix, Placeholder, Term, and PendingDecision tables per data-model.md in src/main/persistence/workspace-schema.ts
-- [ ] T020 Implement SQLite connection management (better-sqlite3, WAL mode) for registry.sqlite and per-workspace files, including platform-appropriate userData paths (macOS default, Windows explicit `%LOCALAPPDATA%` override) and 0700/0600 permission creation on macOS, in src/main/persistence/db-connection.ts (research.md #1, #10) (depends on T018, T019)
+- [X] T018 [P] Define the registry.sqlite schema and migration for the RegistryKey and Workspace tables per data-model.md in src/main/persistence/registry-schema.ts
+- [X] T019 [P] Define the per-workspace sqlite schema and migration for the Prefix, Placeholder, Term, and PendingDecision tables per data-model.md in src/main/persistence/workspace-schema.ts
+- [X] T020 Implement SQLite connection management (better-sqlite3, WAL mode) for registry.sqlite and per-workspace files, including platform-appropriate userData paths (macOS default, Windows explicit `%LOCALAPPDATA%` override) and 0700/0600 permission creation on macOS, in src/main/persistence/db-connection.ts (research.md #1, #10) (depends on T018, T019)
 
 ### IPC validation boundary
 
