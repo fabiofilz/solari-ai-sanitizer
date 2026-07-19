@@ -41,6 +41,20 @@ version actually used (an exact `package.json` version, no `^`/`~` range) and
 confirm the Node ABI it bundles before relying on any native-module or
 Node-version-specific behavior (research.md #1, #10, #11).
 
+**Implementation baseline** (as of 2026-07-19, Setup phase T002): pinned to
+**Electron 43.1.0**, not the 43.1.1 planning baseline above. This is a
+technical dependency-baseline correction, not a product requirement change:
+43.1.1 was published within 7 days of the implementation date, and the
+project's dependency-safety policy (global, non-negotiable) rejects installing
+any package published in that window regardless of how minor the version
+delta is. 43.1.0 was confirmed, by actually running it
+(`process.versions.node`), to bundle the identical **Node 24.18.0** the
+planning baseline already assumed — so this correction changes only the
+Electron patch digit and affects no Node-ABI-dependent design decision in this
+document or in research.md. `npm audit` reports zero vulnerabilities against
+43.1.0. Re-verify 43.1.1 (or later) for adoption once it clears the
+freshness window, if there is a concrete reason to move off 43.1.0.
+
 **Primary Dependencies**: Electron (desktop shell + renderer sandboxing; its
 built-in *asynchronous* `safeStorage` API — `isAsyncEncryptionAvailable()`,
 `encryptStringAsync()`, `decryptStringAsync()` — for OS-backed key wrapping,

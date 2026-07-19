@@ -18,6 +18,12 @@ logs/
 tmp/
 temp/
 
+# Solari AI Sanitizer local/dev SQLite state (research.md #10 "Preventing accidental Git inclusion")
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+.dev-userdata/
+
 # Node, React and Electron
 node_modules/
 dist/
@@ -25,6 +31,8 @@ build/
 out/
 release/
 coverage/
+playwright-report/
+test-results/
 .npm/
 .yarn/
 .pnpm-store/

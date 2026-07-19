@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  quality-gates:
+    name: Quality gates (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Specification validation
+        shell: bash
+        run: |
+          bash .specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
+          node scripts/validate-tasks.mjs
+
+      - name: Prettier format check
+        run: npm run format:check
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Type check (tsc --noEmit)
+        run: npm run typecheck
+
+      - name: Dependency vulnerability audit
+        run: node scripts/audit-check.mjs
+
+      - name: Unit + contract tests (Vitest)
+        run: npm test
+
+      - name: End-to-end tests (Playwright + Electron)
+        run: npm run test:e2e
+
+      - name: Build verification (package the application)
+        run: npm run package

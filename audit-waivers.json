@@ -1,0 +1,4 @@
+{
+  "$schema": "Waiver entries for scripts/audit-check.mjs. Each waiver requires id (GHSA advisory ID), package, reason, and an expires date (YYYY-MM-DD). Only vulnerabilities with no available fix may be waived here — the audit gate re-checks this file on every run and fails again once a waiver expires.",
+  "waivers": []
+}

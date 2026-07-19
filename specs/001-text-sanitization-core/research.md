@@ -113,6 +113,19 @@ re-renders — important at the 500,000-character scale required by FR-SCALE-001
   decorations or keep the UI responsive (FR-SCALE-003) at 500,000-character scale
   without reimplementing what an editor component already provides.
 
+**Implementation note (Setup phase T003, 2026-07-19)**: pinned to
+**`monaco-editor@0.53.0`**, not the newer `0.55.1` initially considered.
+`0.55.1` (and `0.54.x`) pull in `dompurify` as a dependency of Monaco's
+markdown-hover renderer, and the installed `dompurify` version carried
+multiple open moderate-severity XSS advisories (`npm audit`) with no patched
+release inside `monaco-editor`'s own dependency range at pin time. `0.53.0`
+has no `dompurify` dependency at all — the markdown-hover/language-service
+renderer that pulls it in is exactly the kind of feature this decision already
+says is unneeded ("plain-text mode, no language services that are not
+needed"), so dropping to `0.53.0` removes the vulnerable dependency entirely
+rather than working around it, at no functional cost to this feature's actual
+use of Monaco. `npm audit` reports zero vulnerabilities against `0.53.0`.
+
 ## 5. Deterministic multi-pattern matching at scale
 
 **Decision**: A single-pass Aho-Corasick automaton built from the active
