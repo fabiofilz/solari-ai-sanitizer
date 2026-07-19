@@ -58,10 +58,10 @@ Single-project Electron application per plan.md's Project Structure:
 
 ### Encryption primitives
 
-- [ ] T014 [P] Unit tests for AES-256-GCM round-trip correctness, HKDF subkey separation, and blind-index determinism using synthetic keys, written and confirmed to fail before any crypto primitive exists, in tests/unit/domain/crypto.test.ts (constitution Principle VI; research.md #10)
-- [ ] T015 [P] Implement AES-256-GCM encrypt/decrypt primitives (nonce + ciphertext + auth tag) in src/domain/crypto/aes-gcm.ts, making T014's AES-GCM assertions pass (research.md #10)
-- [ ] T016 [P] Implement HKDF subkey derivation producing a distinct encryption subkey and HMAC index subkey from one raw DEK in src/domain/crypto/hkdf.ts, making T014's HKDF assertions pass (research.md #10)
-- [ ] T017 [P] Implement the HMAC-SHA256 blind-index primitive for deterministic exact-match lookups in src/domain/crypto/blind-index.ts, making T014's blind-index assertions pass (research.md #10)
+- [X] T014 [P] Unit tests for AES-256-GCM round-trip correctness, HKDF subkey separation, and blind-index determinism using synthetic keys, written and confirmed to fail before any crypto primitive exists, in tests/unit/domain/crypto.test.ts (constitution Principle VI; research.md #10)
+- [X] T015 [P] Implement AES-256-GCM encrypt/decrypt primitives (nonce + ciphertext + auth tag) in src/domain/crypto/aes-gcm.ts, making T014's AES-GCM assertions pass (research.md #10)
+- [X] T016 [P] Implement HKDF subkey derivation producing a distinct encryption subkey and HMAC index subkey from one raw DEK in src/domain/crypto/hkdf.ts, making T014's HKDF assertions pass (research.md #10)
+- [X] T017 [P] Implement the HMAC-SHA256 blind-index primitive for deterministic exact-match lookups in src/domain/crypto/blind-index.ts, making T014's blind-index assertions pass (research.md #10)
 
 ### Persistence schema
 
