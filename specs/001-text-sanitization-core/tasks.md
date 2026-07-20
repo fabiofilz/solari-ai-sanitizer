@@ -86,8 +86,8 @@ Single-project Electron application per plan.md's Project Structure:
 
 ### Redaction
 
-- [ ] T030 [P] Unit test for the redaction helper: assert log/error/diagnostic output never includes a decrypted value, raw/wrapped DEK, derived subkey, or nonce/ciphertext blob, referencing only IDs and categories, written and confirmed to fail before the helper exists, in tests/unit/main/redact.test.ts (constitution Principle I; research.md #10 redaction rules)
-- [ ] T031 Implement a shared logging/error helper that redacts decrypted values, raw/wrapped DEKs, derived subkeys, and nonce/ciphertext blobs from every log line, thrown error, and diagnostic, referencing only IDs and categories, in src/main/logging/redact.ts, making T030 pass (research.md #10 redaction rules; constitution Principle I)
+- [X] T030 [P] Unit test for the redaction helper: assert log/error/diagnostic output never includes a decrypted value, raw/wrapped DEK, derived subkey, or nonce/ciphertext blob, referencing only IDs and categories, written and confirmed to fail before the helper exists, in tests/unit/main/redact.test.ts (constitution Principle I; research.md #10 redaction rules)
+- [X] T031 Implement a shared logging/error helper that redacts decrypted values, raw/wrapped DEKs, derived subkeys, and nonce/ciphertext blobs from every log line, thrown error, and diagnostic, referencing only IDs and categories, in src/main/logging/redact.ts, making T030 pass (research.md #10 redaction rules; constitution Principle I)
 
 ### Workspace bootstrap (create + open only — full CRUD is US5)
 
