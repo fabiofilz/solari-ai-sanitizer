@@ -80,9 +80,9 @@ Single-project Electron application per plan.md's Project Structure:
 
 ### Key management
 
-- [ ] T027 [P] Unit tests for key-manager: wrap/unwrap round-trip, the `shouldReEncrypt` re-wrap path, and `WORKSPACE_KEY_UNAVAILABLE`/`REGISTRY_KEY_UNAVAILABLE` failure handling against a mocked `safeStorage`, written and confirmed to fail before key-manager.ts exists, in tests/unit/main/key-manager.test.ts (constitution Principle VI; research.md #10, #13)
-- [ ] T028 Implement key-manager.ts: `safeStorage.isAsyncEncryptionAvailable()` gate, DEK wrap/unwrap via `safeStorage.encryptStringAsync`/`decryptStringAsync` with Base64 encode/decode and exact-32-byte length validation, and `shouldReEncrypt` re-wrap handling, for both the registry DEK and every per-workspace DEK, in src/main/persistence/key-manager.ts, making T027 pass (research.md #10, #13) — the only module allowed to call `safeStorage`
-- [ ] T029 Add a startup check that verifies `safeStorage.isAsyncEncryptionAvailable`/`encryptStringAsync`/`decryptStringAsync` exist with the expected signatures against the pinned Electron version's own `electron.d.ts`, failing fast with a clear message otherwise (plan.md Technical Context; research.md #10) (depends on T028)
+- [X] T027 [P] Unit tests for key-manager: wrap/unwrap round-trip, the `shouldReEncrypt` re-wrap path, and `WORKSPACE_KEY_UNAVAILABLE`/`REGISTRY_KEY_UNAVAILABLE` failure handling against a mocked `safeStorage`, written and confirmed to fail before key-manager.ts exists, in tests/unit/main/key-manager.test.ts (constitution Principle VI; research.md #10, #13)
+- [X] T028 Implement key-manager.ts: `safeStorage.isAsyncEncryptionAvailable()` gate, DEK wrap/unwrap via `safeStorage.encryptStringAsync`/`decryptStringAsync` with Base64 encode/decode and exact-32-byte length validation, and `shouldReEncrypt` re-wrap handling, for both the registry DEK and every per-workspace DEK, in src/main/persistence/key-manager.ts, making T027 pass (research.md #10, #13) — the only module allowed to call `safeStorage`
+- [X] T029 Add a startup check that verifies `safeStorage.isAsyncEncryptionAvailable`/`encryptStringAsync`/`decryptStringAsync` exist with the expected signatures against the pinned Electron version's own `electron.d.ts`, failing fast with a clear message otherwise (plan.md Technical Context; research.md #10) (depends on T028)
 
 ### Redaction
 
