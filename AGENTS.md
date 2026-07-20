@@ -131,7 +131,7 @@ to future requests.
 Every completion report includes:
 
 - Tasks completed.
-- Requirement IDs affected (FR-*/SC-* or equivalent).
+- Requirement IDs affected (FR-_/SC-_ or equivalent).
 - Files created, modified, or removed.
 - Initial failing-test evidence, when TDD applied.
 - A short implementation summary.
