@@ -71,12 +71,12 @@ Single-project Electron application per plan.md's Project Structure:
 
 ### IPC validation boundary
 
-- [ ] T021 [P] Contract tests validating the intended Zod request/response schema for every channel in all four namespaces (`workspace`, `translation`, `decisions`, `terms`) against representative valid/invalid payloads drawn directly from contracts/*.md, written and confirmed to fail before the schema modules exist, in tests/contract/ipc-schemas.test.ts (constitution Principle VI; research.md #7)
-- [ ] T022 [P] Define Zod request/response schemas for the `workspace:*` channels per contracts/workspace.md in src/main/ipc/schemas/workspace.schema.ts, making T021's workspace assertions pass
-- [ ] T023 [P] Define Zod request/response schemas for the `translation:*` channels, including the 500,000-character `INPUT_TOO_LARGE` ceiling, per contracts/translation.md in src/main/ipc/schemas/translation.schema.ts, making T021's translation assertions pass
-- [ ] T024 [P] Define Zod request/response schemas for the `decisions:*` channels per contracts/decisions.md in src/main/ipc/schemas/decisions.schema.ts, making T021's decisions assertions pass
-- [ ] T025 [P] Define Zod request/response schemas for the `terms:*` channels per contracts/terms.md in src/main/ipc/schemas/terms.schema.ts, making T021's terms assertions pass
-- [ ] T026 Implement a shared IPC dispatch helper that validates every incoming payload against its Zod schema before invoking domain logic, and rejects any `workspaceId`-scoped request with `WORKSPACE_DELETING` while that workspace's registry status is `DELETING`, in src/main/ipc/dispatch.ts (constitution Principle V; data-model.md deletion state machine) (depends on T022-T025)
+- [X] T021 [P] Contract tests validating the intended Zod request/response schema for every channel in all four namespaces (`workspace`, `translation`, `decisions`, `terms`) against representative valid/invalid payloads drawn directly from contracts/*.md, written and confirmed to fail before the schema modules exist, in tests/contract/ipc-schemas.test.ts (constitution Principle VI; research.md #7)
+- [X] T022 [P] Define Zod request/response schemas for the `workspace:*` channels per contracts/workspace.md in src/main/ipc/schemas/workspace.schema.ts, making T021's workspace assertions pass
+- [X] T023 [P] Define Zod request/response schemas for the `translation:*` channels, including the 500,000-character `INPUT_TOO_LARGE` ceiling, per contracts/translation.md in src/main/ipc/schemas/translation.schema.ts, making T021's translation assertions pass
+- [X] T024 [P] Define Zod request/response schemas for the `decisions:*` channels per contracts/decisions.md in src/main/ipc/schemas/decisions.schema.ts, making T021's decisions assertions pass
+- [X] T025 [P] Define Zod request/response schemas for the `terms:*` channels per contracts/terms.md in src/main/ipc/schemas/terms.schema.ts, making T021's terms assertions pass
+- [X] T026 Implement a shared IPC dispatch helper that validates every incoming payload against its Zod schema before invoking domain logic, and rejects any `workspaceId`-scoped request with `WORKSPACE_DELETING` while that workspace's registry status is `DELETING`, in src/main/ipc/dispatch.ts (constitution Principle V; data-model.md deletion state machine) (depends on T022-T025)
 
 ### Key management
 
