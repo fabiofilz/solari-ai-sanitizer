@@ -50,3 +50,26 @@ conflict instead of silently choosing one.
 For everything else — required reading order, full authority order, Git
 discipline detail, validation expectations — see `AGENTS.md` (repository
 root). This file does not duplicate it.
+
+## Multi-agent workflow (Claude Code specifics)
+
+Your global `~/.claude/CLAUDE.md` remains active and must always be
+followed alongside this section.
+
+- Use the project subagents under `.claude/agents/`
+  (`specification-reviewer`, `security-reviewer`, `test-reviewer`)
+  according to the routing rules and consolidation process in
+  `docs/agent-workflow.md` — do not duplicate that document here.
+- The main Claude Code session is the only writer: it is the only agent
+  that edits files, runs tests, or performs Git operations in this
+  repository.
+- Reviewer subagents are read-only and must never be given editing tools;
+  they report findings back to the main session, which decides what to
+  correct.
+- Reviewer subagents cannot read the current branch, diff, or test output
+  themselves. When invoking one via the Agent tool, include the
+  "Orchestrator review packet" (`docs/agent-workflow.md`) directly in its
+  prompt — a fresh subagent has no memory of this conversation.
+- Never commit, push, or merge automatically. Git actions in this
+  repository require the user's explicit authorization for that specific
+  action, per `AGENTS.md`'s Git discipline section.

@@ -126,6 +126,35 @@ changes — unless the user has explicitly authorized that specific action in
 the current request. Authorization for one such action does not carry over
 to future requests.
 
+## Multi-agent workflow
+
+This section applies to any coding agent capable of delegating to
+sub-agents, not only Claude Code. Full detail — routing scores, reviewer
+responsibilities, and the finding-consolidation process — lives in
+`docs/agent-workflow.md`; this section only states the non-negotiable
+rules and does not duplicate that document.
+
+- Before a requested task or task range begins, run the risk assessment in
+  `docs/agent-workflow.md` and record the selected mode (SIMPLE,
+  TARGETED_REVIEW, or FULL_MULTI_AGENT) and its score.
+- **One writer**: only the orchestrating agent session modifies files, runs
+  tests, or performs Git operations. Delegated reviewers never do.
+- Reviewers cannot determine the active feature, branch, diff, or test
+  output themselves. Before invoking one, the orchestrator determines that
+  context itself (per "Finding the active feature" above) and explicitly
+  supplies it — see `docs/agent-workflow.md`'s "Orchestrator review packet".
+- **Reviewers are read-only**: any sub-agent used for review must be unable
+  to edit files, commit, push, merge, or run destructive commands.
+- Do not delegate for low-risk (SIMPLE) work — implement it directly.
+- If independent reviewers disagree, or a reviewer surfaces a conflict
+  between normative artifacts, resolve it using this file's Authority Order
+  above; do not let reviewer consensus override a higher-precedence
+  artifact, and do not silently pick a side — report unresolved conflicts
+  instead.
+- All other rules in this file (Git discipline, test-first workflow, scope
+  discipline, privacy/security, task tracking, completion reports) apply
+  identically regardless of whether a task used delegation.
+
 ## Completion reports
 
 Every completion report includes:
