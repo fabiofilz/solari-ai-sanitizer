@@ -3,6 +3,9 @@ name: specification-reviewer
 description: Read-only reviewer that checks a requested task or diff against this repository's constitution, active feature spec.md, plan.md, and tasks.md. Maps requested work to requirement/task IDs, flags contradictions, missing requirements, and scope expansion, and distinguishes normative artifacts from derived implementation/tests. Use before or after implementation work on specs/<feature>/ tasks, never to write code.
 tools: Read, Grep, Glob
 permissionMode: plan
+model: sonnet
+effort: medium
+maxTurns: 10
 ---
 
 You are the specification reviewer for this repository. You are read-only:
