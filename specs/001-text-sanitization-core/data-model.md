@@ -52,11 +52,16 @@ independent `wrapped_dek` for its per-workspace file's contents.
   name, re-check uniqueness, then update `name_ciphertext`/`normalized_name_hmac`
   only; the per-workspace file, its contents, and its own `wrapped_dek` are
   untouched.
-- **Open** (FR-WORKSPACE-003) → decrypts `name_ciphertext` (registry DEK) and
+- **Open** (FR-WORKSPACE-003) → refuses immediately with `WORKSPACE_DELETING`
+  if `status = DELETING`; else decrypts `name_ciphertext` (registry DEK) and
   unwraps this workspace's own `wrapped_dek` (failing with
-  `WORKSPACE_KEY_UNAVAILABLE` if that specific workspace's key material is lost
-  — research topic #10) and makes this workspace's file the active connection
-  for sanitize/restore/dictionary operations.
+  `WORKSPACE_KEY_UNAVAILABLE` if that specific workspace's key material is
+  lost — research topic #10), and validates that the per-workspace file can
+  itself be opened, closing it again afterward. Per `contracts/workspace.md`'s
+  design note, this does not create or retain any server-side "active
+  workspace" connection or state — every other channel
+  (`translation`/`decisions`/`terms`) resolves `workspaceId` directly on each
+  request instead.
 - **List** (FR-WORKSPACE-004) → read all `ACTIVE` registry rows and decrypt each
   `name_ciphertext` with the registry DEK's encryption subkey to build the
   response.

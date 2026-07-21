@@ -178,6 +178,47 @@ export function openWorkspaceDatabase(userDataDir: string, workspaceId: string):
 }
 
 /**
+ * Opens an *existing* <workspaceId>.sqlite under <userDataDir>/workspaces/
+ * — never creates the workspaces directory or the database file itself
+ * (T032-T037 remediation, defect 2). Validates workspaceId as a canonical
+ * UUID and defensively confirms the resolved path stays inside the
+ * workspaces directory before any filesystem check, exactly like
+ * openWorkspaceDatabase. Throws if the file does not already exist, before
+ * ever constructing a better-sqlite3 Database (which would otherwise create
+ * it). Applies the same WAL/foreign-key/busy-timeout pragmas, idempotent
+ * schema migration, and permission restriction as openWorkspaceDatabase for
+ * a database that does exist, and closes the connection before rethrowing
+ * if any step after open fails.
+ */
+export function openExistingWorkspaceDatabase(
+  userDataDir: string,
+  workspaceId: string,
+): Database.Database {
+  assertValidWorkspaceId(workspaceId);
+
+  const workspacesDir = join(userDataDir, WORKSPACES_DIR_NAME);
+  const dbPath = join(workspacesDir, `${workspaceId}.sqlite`);
+  assertPathIsStrictDescendant(workspacesDir, dbPath);
+
+  if (!existsSync(dbPath)) {
+    throw new Error("Workspace database does not exist");
+  }
+
+  const db = new Database(dbPath);
+  try {
+    restrictFilePermissionsIfExists(dbPath);
+    configureConnection(db);
+    migrateWorkspaceSchema(db);
+    restrictDatabaseFilePermissions(dbPath);
+  } catch (err) {
+    db.close();
+    throw err;
+  }
+
+  return db;
+}
+
+/**
  * Computes the Windows userData override path under %LOCALAPPDATA%
  * (research.md #10 "Platform-appropriate application-data locations").
  * Returns undefined on every other platform, meaning "no override — use

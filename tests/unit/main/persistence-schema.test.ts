@@ -9,6 +9,7 @@ import {
 import {
   openRegistryDatabase,
   openWorkspaceDatabase,
+  openExistingWorkspaceDatabase,
   resolveUserDataPathOverride,
   assertValidWorkspaceId,
   assertPathIsStrictDescendant,
@@ -539,6 +540,86 @@ describe("per-workspace schema and connection (T019, T020)", () => {
     reopened.close();
 
     db = openWorkspaceDatabase(tempDir.path, VALID_WORKSPACE_ID);
+  });
+});
+
+describe("existing-only per-workspace database open (T032-T037 remediation, defect 2)", () => {
+  let tempDir: TempUserDataHandle;
+
+  beforeEach(() => {
+    tempDir = createTempUserDataDir();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    tempDir.cleanup();
+  });
+
+  it("opens an already-existing workspace database with WAL mode, foreign keys, and the documented busy timeout", () => {
+    const created = openWorkspaceDatabase(tempDir.path, VALID_WORKSPACE_ID);
+    created.close();
+
+    const db = openExistingWorkspaceDatabase(tempDir.path, VALID_WORKSPACE_ID);
+    try {
+      expect(db.pragma("journal_mode", { simple: true })).toBe("wal");
+      expect(db.pragma("foreign_keys", { simple: true })).toBe(1);
+      expect(db.pragma("busy_timeout", { simple: true })).toBe(BUSY_TIMEOUT_MS);
+    } finally {
+      db.close();
+    }
+  });
+
+  it.runIf(isPosix)("preserves 0600 file permissions when reopening an existing database", () => {
+    const created = openWorkspaceDatabase(tempDir.path, VALID_WORKSPACE_ID);
+    created.close();
+
+    const dbPath = join(tempDir.path, "workspaces", `${VALID_WORKSPACE_ID}.sqlite`);
+    const db = openExistingWorkspaceDatabase(tempDir.path, VALID_WORKSPACE_ID);
+    expect(statSync(dbPath).mode & 0o777).toBe(0o600);
+    db.close();
+  });
+
+  it("throws and never creates the database file when no workspace database exists yet", () => {
+    const dbPath = join(tempDir.path, "workspaces", `${VALID_WORKSPACE_ID}.sqlite`);
+    expect(existsSync(dbPath)).toBe(false);
+
+    expect(() => openExistingWorkspaceDatabase(tempDir.path, VALID_WORKSPACE_ID)).toThrow();
+
+    expect(existsSync(dbPath)).toBe(false);
+  });
+
+  it("never creates the workspaces directory when no workspace database exists yet", () => {
+    const workspacesDir = join(tempDir.path, "workspaces");
+    expect(existsSync(workspacesDir)).toBe(false);
+
+    expect(() => openExistingWorkspaceDatabase(tempDir.path, VALID_WORKSPACE_ID)).toThrow();
+
+    expect(existsSync(workspacesDir)).toBe(false);
+  });
+
+  it("rejects a malformed workspace ID before touching the filesystem", () => {
+    expect(() => openExistingWorkspaceDatabase(tempDir.path, "not-a-uuid")).toThrow();
+    expect(existsSync(join(tempDir.path, "workspaces"))).toBe(false);
+  });
+
+  it("closes the connection and rethrows the original error if migration fails on an existing database", () => {
+    const created = openWorkspaceDatabase(tempDir.path, VALID_WORKSPACE_ID);
+    created.close();
+
+    const syntheticError = new Error("synthetic migration failure — test only");
+    const migrateSpy = vi
+      .spyOn(workspaceSchemaModule, "migrateWorkspaceSchema")
+      .mockImplementation(() => {
+        throw syntheticError;
+      });
+    const closeSpy = vi.spyOn(DatabaseCtor.prototype, "close");
+
+    expect(() => openExistingWorkspaceDatabase(tempDir.path, VALID_WORKSPACE_ID)).toThrow(
+      syntheticError,
+    );
+    expect(closeSpy).toHaveBeenCalledTimes(1);
+
+    migrateSpy.mockRestore();
   });
 });
 

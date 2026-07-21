@@ -64,10 +64,13 @@ redundant second process.
 
 - **Request**: `{ id: string }`
 - **Response**: `{ id: string, name: string }`
-- **Errors**: `NOT_FOUND`, `REGISTRY_KEY_UNAVAILABLE` (name could not be
-  decrypted — research.md #13), `WORKSPACE_KEY_UNAVAILABLE` (this workspace's
-  own `wrapped_dek` could not be unwrapped — research.md #10; other workspaces
-  are unaffected)
+- **Errors**: `NOT_FOUND` — either no registry row exists for the requested
+  workspace id, or the registry row exists but its expected per-workspace
+  SQLite file is missing; in both cases `workspace:open` MUST fail with
+  `NOT_FOUND` and MUST NOT create a replacement per-workspace database file.
+  `REGISTRY_KEY_UNAVAILABLE` (name could not be decrypted — research.md #13),
+  `WORKSPACE_KEY_UNAVAILABLE` (this workspace's own `wrapped_dek` could not be
+  unwrapped — research.md #10; other workspaces are unaffected)
 - **Satisfies**: FR-WORKSPACE-003 — confirms the workspace exists and is usable;
   does not mutate any server-side "active workspace" state (see design note
   above).
