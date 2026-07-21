@@ -100,9 +100,9 @@ Single-project Electron application per plan.md's Project Structure:
 
 ### Crash-safe deletion protocol (engine only — wired into `workspace:delete` in US5)
 
-- [ ] T038 [P] Integration test simulating a crash after each of the five deletion-protocol steps and asserting reconciliation always converges to a consistent end state, written and confirmed to fail before deletion-reconciler.ts exists, in tests/integration/deletion-crash-safety.spec.ts (constitution Principle VI; research.md #12 Tests)
-- [ ] T039 Implement deletion-reconciler.ts: the five-step, idempotent, resumable crash-safe deletion protocol (mark DELETING → close resources → `wrapped_dek = NULL` → delete file + `-wal`/`-shm` → delete registry row), making T038's per-step assertions pass, in src/main/persistence/deletion-reconciler.ts (research.md #12) (depends on T028)
-- [ ] T040 Implement the startup reconciliation scan that resumes any interrupted deletion from its inferred step (`wrapped_dek` present/null, file present/absent), making T038's remaining assertions pass, in src/main/persistence/deletion-reconciler.ts (research.md #12) (depends on T039)
+- [X] T038 [P] Integration test simulating a crash after each of the five deletion-protocol steps and asserting reconciliation always converges to a consistent end state, written and confirmed to fail before deletion-reconciler.ts exists, in tests/integration/deletion-crash-safety.spec.ts (constitution Principle VI; research.md #12 Tests)
+- [X] T039 Implement deletion-reconciler.ts: the five-step, idempotent, resumable crash-safe deletion protocol (mark DELETING → close resources → `wrapped_dek = NULL` → delete file + `-wal`/`-shm` → delete registry row), making T038's per-step assertions pass, in src/main/persistence/deletion-reconciler.ts (research.md #12) (depends on T028)
+- [X] T040 Implement the startup reconciliation scan that resumes any interrupted deletion from its inferred step (`wrapped_dek` present/null, file present/absent), making T038's remaining assertions pass, in src/main/persistence/deletion-reconciler.ts (research.md #12) (depends on T039)
 
 ### Single-instance lock and app lifecycle
 
