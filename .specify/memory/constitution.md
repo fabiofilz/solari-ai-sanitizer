@@ -72,6 +72,90 @@ Pre-ratification corrections applied to the first-draft body (version stays
     reinterpreting the higher-precedence one.
 
 Deferred TODOs: none
+
+================================================================================
+AMENDMENT: 1.0.1 → 1.1.0 (2026-07-21)
+================================================================================
+Version change: 1.0.1 → 1.1.0 (MINOR — materially expands and clarifies an
+existing normative guarantee; does not remove or redefine Strict Workspace
+Isolation, or any other principle, in a backward-incompatible way).
+
+Amended: Principle II (Strict Workspace Isolation) — the workspace-deletion
+bullet only. The rest of Principle II (cross-workspace lookup/allocation
+prohibition, per-workspace mapping isolation) is unchanged.
+
+Previous text:
+  "Deleting a workspace MUST remove its records transactionally and report
+  any implications for local backups."
+
+Replacement text:
+  "Deleting a workspace MUST use an idempotent, resumable, crash-safe
+  logical deletion protocol. Once deletion begins, new operations for that
+  workspace MUST be rejected. The protocol MUST remove the workspace's live
+  wrapped-key reference before deleting its database and companion files,
+  and MUST converge after interruption to removal of both the registry row
+  and the workspace files. Mutations contained within one SQLite database
+  MUST use real database transactions, but the application MUST NOT claim
+  atomicity across independent databases and filesystem operations. Product
+  documentation MUST disclose local-backup implications and MUST NOT claim
+  guaranteed cryptographic erasure or secure physical deletion."
+
+Rationale: a single atomic transaction cannot span registry.sqlite, a
+separate per-workspace SQLite file, and filesystem deletion — no such
+cross-resource atomic primitive exists
+(specs/001-text-sanitization-core/research.md #12). Independent multi-agent
+review of tasks T038–T040 (the crash-safe deletion-reconciler implementation)
+surfaced that the literal word "transactionally" in the previous Principle II
+text conflicted with this already-approved cross-resource deletion design
+(research.md #12's five-step idempotent, resumable, crash-safe protocol;
+data-model.md's workspace deletion state machine) — a conflict this project's
+own plan.md had already worked around by correcting `contracts/workspace.md`'s
+wording (see plan.md's "Second Phase-1 revision re-check"), but had not yet
+resolved at the constitution level itself. This amendment closes that gap by
+replacing an unachievable cross-resource-atomicity promise with the guarantee
+the design actually provides and already implements:
+  - Transactional guarantees are RETAINED, unweakened, for mutations
+    contained within one SQLite database (registry.sqlite or a single
+    per-workspace file) — nothing here loosens single-database transaction
+    guarantees.
+  - Cross-resource deletion (registry row + per-workspace file + `-wal`/
+    `-shm` companions) is idempotent, resumable, and crash-safe, converging
+    to full removal after any interruption, but is NOT claimed to be atomic
+    across those independent resources.
+  - No claim of guaranteed cryptographic erasure or secure physical deletion
+    is introduced or implied — research.md #10's "Workspace deletion & key
+    destruction — honest scope" already disclaimed this; the constitution
+    now states it explicitly rather than leaving the disclaimer only in a
+    lower-precedence design document.
+  - The pre-existing "report any implications for local backups" obligation
+    is retained, restated as an explicit product-documentation disclosure
+    requirement rather than dropped.
+
+Dependent feature artifacts reviewed: specs/001-text-sanitization-core/
+plan.md's Constitution Check section (Principle II re-check — updated, see
+plan.md's "Fourth Phase-1 revision re-check"), research.md #12, data-model.md's
+"Workspace deletion state machine", and contracts/workspace.md's
+`workspace:delete` section. No changes were needed to research.md,
+data-model.md, or contracts/workspace.md — they already describe exactly the
+protocol this amendment now recognizes as constitutionally sufficient without
+reinterpretation.
+
+Templates reviewed (re-inspected for this amendment specifically):
+  ✅ .specify/templates/plan-template.md  — no "transactionally"/cross-resource
+     atomicity language present; Constitution Check gate remains generic;
+     no change needed.
+  ✅ .specify/templates/spec-template.md  — no workspace-deletion or
+     transactional-guarantee language present; no change needed.
+  ✅ .specify/templates/tasks-template.md — no workspace-deletion or
+     transactional-guarantee language present; no change needed.
+  ✅ .specify/templates/constitution-template.md — fully generic placeholder
+     principle headers only, no project-specific deletion wording; no change
+     needed.
+  ✅ .specify/templates/checklist-template.md — no relevant language present;
+     no change needed.
+
+Deferred TODOs: none
+================================================================================
 -->
 
 # Solari AI Sanitizer Constitution
@@ -114,8 +198,16 @@ workspace.
   searching other workspaces.
 - Two workspaces may map the same original value differently without any
   data leaking between them.
-- Deleting a workspace MUST remove its records transactionally and report
-  any implications for local backups.
+- Deleting a workspace MUST use an idempotent, resumable, crash-safe logical
+  deletion protocol. Once deletion begins, new operations for that workspace
+  MUST be rejected. The protocol MUST remove the workspace's live
+  wrapped-key reference before deleting its database and companion files,
+  and MUST converge after interruption to removal of both the registry row
+  and the workspace files. Mutations contained within one SQLite database
+  MUST use real database transactions, but the application MUST NOT claim
+  atomicity across independent databases and filesystem operations. Product
+  documentation MUST disclose local-backup implications and MUST NOT claim
+  guaranteed cryptographic erasure or secure physical deletion.
 
 **Rationale**: Users create workspaces to isolate contexts, such as
 different clients or engagements. Any cross-workspace data flow is both a
@@ -294,4 +386,4 @@ complete. Violations require documented justification.
 **Versioning policy**: Semantic versioning as defined above. The version
 line at the bottom of this file is the single authoritative version record.
 
-**Version**: 1.0.1 | **Ratified**: 2026-07-17 | **Last Amended**: 2026-07-18
+**Version**: 1.1.0 | **Ratified**: 2026-07-17 | **Last Amended**: 2026-07-21

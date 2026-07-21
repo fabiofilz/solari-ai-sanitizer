@@ -250,6 +250,49 @@ above the table for why each addition is compliance depth on an
 already-required capability, not new scope. The Complexity Tracking table
 remains empty.
 
+**Fourth Phase-1 revision re-check** (constitution amendment 1.1.0,
+2026-07-21): still PASS on all seven principles — Principle II now passes
+**without reinterpretation**, rather than requiring one. This revision
+corrects a wording gap between the constitution and the already-approved
+design, not a design defect, and changes no implementation, task scope, or
+product behavior:
+
+- The previous constitution wording ("Deleting a workspace MUST remove its
+  records transactionally...") conflicted with the already-approved
+  cross-resource deletion design: no single atomic transaction can span
+  `registry.sqlite`, a separate per-workspace SQLite file, and filesystem
+  deletion (research.md #12). This plan's own "Second Phase-1 revision
+  re-check" above had already corrected `contracts/workspace.md`'s wording to
+  match that design, but the constitution's own Principle II text was not
+  updated at that time — an oversight this revision closes.
+- Constitution version 1.1.0 (`.specify/memory/constitution.md`) resolves the
+  gap by restating Principle II's deletion guarantee as: an idempotent,
+  resumable, crash-safe logical deletion protocol; rejection of new
+  operations once deletion begins; the live wrapped-key reference removed
+  before the database and companion files are deleted; convergence after
+  interruption to full removal of both the registry row and the workspace
+  files; explicit retention of real database transactions for mutations
+  contained within one SQLite database; an explicit disclaimer that the
+  application does not claim atomicity across independent databases and
+  filesystem operations, nor guaranteed cryptographic erasure or secure
+  physical deletion; and a continued requirement that product documentation
+  disclose local-backup implications.
+- Every registry-level SQLite mutation in the deletion protocol (mark
+  `DELETING`, null `wrapped_dek`, delete the registry row) already runs as a
+  single `better-sqlite3` statement against `registry.sqlite` — transactional
+  guarantees within one database are unaffected and unweakened by this
+  amendment.
+- Cross-resource deletion (registry row + per-workspace file + `-wal`/`-shm`
+  companions) uses the five-step idempotent, resumable, crash-safe protocol
+  in research.md #12 and `src/main/persistence/deletion-reconciler.ts`
+  (T039/T040) — unchanged by this amendment, since the design was already
+  correct; only the constitution's description of what it guarantees was
+  outdated.
+- No implementation, task scope, or product behavior changed as part of this
+  revision — this is a documentation/governance correction only.
+
+No new Complexity Tracking row is warranted; the table remains empty.
+
 ## Project Structure
 
 ### Documentation (this feature)
