@@ -1,5 +1,5 @@
 import { test, expect, _electron as electron, type ElectronApplication } from "@playwright/test";
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { createRequire } from "node:module";
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -79,6 +79,49 @@ function markerLineCount(markerPath: string): number {
   if (!existsSync(markerPath)) return 0;
   const content = readFileSync(markerPath, "utf8");
   return content.split("\n").filter((line) => line.length > 0).length;
+}
+
+// Force-terminates an Electron main process to simulate a crash (not a
+// clean quit) for the crash-recovery test below. A bare SIGKILL on the main
+// process does not reliably tear down its whole descendant process tree on
+// Windows, which was observed leaving a descendant still holding a userData
+// file handle open — turning the shared-directory rmSync cleanup's bounded
+// retries (see makeSharedDir above) into a persistent EPERM rather than a
+// transient one. On Windows this uses taskkill's /T (tree) flag instead;
+// elsewhere a direct SIGKILL is preserved unchanged. The main-process exit
+// listener is always registered before termination is initiated, so the
+// exit event can never fire before something is listening for it.
+async function forceTerminateProcessTree(mainProcess: ChildProcess): Promise<void> {
+  const pid = mainProcess.pid;
+  if (pid === undefined) {
+    throw new Error("cannot force-terminate a process with no pid");
+  }
+
+  const exited = new Promise<void>((resolvePromise) => {
+    mainProcess.once("exit", () => resolvePromise());
+  });
+
+  if (process.platform === "win32") {
+    // Spawned directly (no shell) with each argument passed separately, so
+    // none of them can be reinterpreted by a shell.
+    const taskkillExitCode = await new Promise<number | null>((resolvePromise, rejectPromise) => {
+      const taskkill = spawn("taskkill", ["/PID", String(pid), "/T", "/F"], {
+        stdio: "ignore",
+      });
+      taskkill.on("exit", (code) => resolvePromise(code));
+      taskkill.on("error", (err) => rejectPromise(err));
+    });
+    if (taskkillExitCode !== 0) {
+      throw new Error(
+        `taskkill could not terminate the process tree for pid ${pid} ` +
+          `(exit code ${String(taskkillExitCode)})`,
+      );
+    }
+  } else {
+    mainProcess.kill("SIGKILL");
+  }
+
+  await exited;
 }
 
 test("a second launch attempt against the same userData directory never touches persistence and defers to the first instance's window", async () => {
@@ -275,15 +318,11 @@ test("after the first instance is force-terminated, a fresh instance against the
     });
     await firstApp.firstWindow();
 
-    // Simulate a crash, not a clean quit: kill the process directly rather
-    // than calling app.close()/app.quit(), so Electron never releases the
-    // lock through its own normal shutdown path.
-    const firstProcess = firstApp.process();
-    const exited = new Promise<void>((resolvePromise) => {
-      firstProcess.once("exit", () => resolvePromise());
-    });
-    firstProcess.kill("SIGKILL");
-    await exited;
+    // Simulate a crash, not a clean quit: force-terminate the process
+    // (tree) directly rather than calling app.close()/app.quit(), so
+    // Electron never releases the lock through its own normal shutdown
+    // path.
+    await forceTerminateProcessTree(firstApp.process());
     firstApp = undefined;
 
     secondApp = await electron.launch({
