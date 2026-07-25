@@ -341,8 +341,10 @@ src/
 │   │   └── deletion-reconciler.ts # crash-safe deletion protocol + startup reconciliation
 │   │                              # (research.md #12)
 │   ├── workers/                # worker_threads orchestration
-│   │   └── translation-worker.ts  # worker entry point wiring domain/sanitizer + domain/restorer
-│   │                                # to parentPort messaging (research.md #11)
+│   │   └── translation-worker.ts  # worker entry point: message-transport/protocol
+│   │                                # boundary (research.md #11); domain/sanitizer and
+│   │                                # domain/restorer are wired into it once those
+│   │                                # modules exist, not before (tasks.md T044/T079/T090)
 │   └── ipc/                   # thin IPC handlers: validate (Zod) → call domain/ → respond
 │
 ├── preload/                 # contextBridge-exposed minimal API surface (mirrors contracts/)

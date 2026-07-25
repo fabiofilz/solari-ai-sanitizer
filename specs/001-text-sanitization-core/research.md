@@ -685,10 +685,21 @@ computation):
 
 ### Project structure impact
 
-Adds `src/main/workers/translation-worker.ts` (the `worker_threads` entry point,
-which wires `domain/sanitizer` and `domain/restorer` to `parentPort` messaging)
+Adds `src/main/workers/translation-worker.ts` (the `worker_threads` entry point)
 and a worker-lifecycle/version-tracking module under `src/main/persistence/` —
 see the updated Project Structure in `plan.md`.
+
+**Sequencing note (T044/T045 ordering-defect remediation, tasks.md, 2026-07-23)**:
+`translation-worker.ts`'s message-transport/protocol boundary (Foundational,
+depends only on this topic) and its actual wiring to `domain/sanitizer`/
+`domain/restorer` (added once those modules exist, by the tasks that build
+them) are two separate steps, not one — the transport boundary never imports
+either domain module itself. This corrects an earlier version of this
+document, which described the final wired-up state as if it were produced in
+one step; the actual task sequencing in `tasks.md` splits it, so neither
+Foundational (which every user story depends on) nor the worker's own
+transport layer ever has to import a module a later user story hasn't built
+yet.
 
 ## 12. Crash-safe, idempotent workspace deletion protocol
 
@@ -984,6 +995,38 @@ the SQL level.
   `BrowserWindow`. A second process that fails to acquire the lock never
   reaches any of these steps — it never opens SQLite, never calls
   `safeStorage`, never starts a worker, and never runs reconciliation.
+- **Narrow, production-inert exceptions to "very first action"**: exactly one
+  thing runs even before the lock call, in either build, and it is always the
+  same kind of thing — resolving which `userData` path this process will use.
+  This must precede the lock, not follow it, because Electron's single-
+  instance lock is itself scoped by the current `userData` path; calling
+  `requestSingleInstanceLock()` before the path is finalized would scope the
+  lock to the wrong directory. Two concrete instances of this one exception:
+  - **Packaged builds, Windows only**: the existing `resolveUserDataPathOverride()`
+    (research.md #10 "Platform-appropriate application-data locations") is
+    called, and if it returns a path (Windows only — `undefined` elsewhere,
+    meaning "use Electron's own default unchanged"), `app.setPath("userData",
+    ...)` applies it, so userData lands under `%LOCALAPPDATA%` rather than a
+    roaming profile. On every other packaged platform this is a no-op.
+  - **Dev/test builds only** (`!app.isPackaged`): the existing isolated-`userData`
+    mechanism applies — an isolated temp directory by default, or a directory
+    supplied via a test-only environment variable so
+    tests/integration/single-instance.spec.ts can force two separate processes
+    to share one directory and exercise real lock contention. A second,
+    narrower test-only environment variable follows the same rule: an
+    optional startup-marker file path that, if set, this process appends its
+    own PID to immediately after entering the post-lock initialization
+    sequence — giving that test a way to directly observe whether this
+    process's post-lock sequence (registry open, key unwrap, reconciliation)
+    ran, rather than only inferring it from filesystem side effects.
+  Both instances touch only a `userData`-path decision (or, for the marker,
+  writes a single PID to a test-supplied path) — neither opens SQLite, calls
+  `safeStorage`, or starts a worker, so neither weakens this topic's actual
+  security guarantee (no *security-relevant* startup step precedes the lock).
+  The dev/test branch and the marker variable have zero effect once packaged
+  (`app.isPackaged` is always `true` there); the packaged-Windows branch has
+  no effect on any other platform or in a dev/test build. No build ever has
+  more than this one path-resolution step ahead of the lock.
 - **Focus behavior**: the `second-instance` event handler on the surviving
   process focuses its existing window (restoring it if minimized), giving the
   user the expected "app is already open" experience rather than silence or a
