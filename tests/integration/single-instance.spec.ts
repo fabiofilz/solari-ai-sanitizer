@@ -81,24 +81,37 @@ function markerLineCount(markerPath: string): number {
   return content.split("\n").filter((line) => line.length > 0).length;
 }
 
-// Force-terminates an Electron main process to simulate a crash (not a
-// clean quit) for the crash-recovery test below. A bare SIGKILL on the main
-// process does not reliably tear down its whole descendant process tree on
-// Windows, which was observed leaving a descendant still holding a userData
-// file handle open — turning the shared-directory rmSync cleanup's bounded
-// retries (see makeSharedDir above) into a persistent EPERM rather than a
-// transient one. On Windows this uses taskkill's /T (tree) flag instead;
-// elsewhere a direct SIGKILL is preserved unchanged. The main-process exit
-// listener is always registered before termination is initiated, so the
-// exit event can never fire before something is listening for it.
-async function forceTerminateProcessTree(mainProcess: ChildProcess): Promise<void> {
+// Force-terminates an Electron app's main process to simulate a crash (not
+// a clean quit) for the crash-recovery test below. A bare SIGKILL on the
+// main process does not reliably tear down its whole descendant process
+// tree on Windows, which was observed leaving a descendant still holding a
+// userData file handle open — turning the shared-directory rmSync
+// cleanup's bounded retries (see makeSharedDir above) into a persistent
+// EPERM rather than a transient one. On Windows this uses taskkill's /T
+// (tree) flag instead; elsewhere a direct SIGKILL is preserved unchanged.
+//
+// Two independent lifecycle signals are awaited, not just the OS process
+// exit: Playwright's own ElectronApplication wraps that process with its
+// own connection/teardown bookkeeping, and closes asynchronously after the
+// process exits. Returning as soon as only the process itself exits (as a
+// prior version of this helper did) let the caller launch the fresh second
+// instance while Playwright's ElectronApplication for the first one was
+// still mid-close, which on Windows surfaced as "Target page, context or
+// browser has been closed" against unrelated Playwright-internal state.
+// Both listeners are registered before termination is initiated, so neither
+// event can fire before something is listening for it.
+async function forceTerminateProcessTree(electronApp: ElectronApplication): Promise<void> {
+  const mainProcess: ChildProcess = electronApp.process();
   const pid = mainProcess.pid;
   if (pid === undefined) {
     throw new Error("cannot force-terminate a process with no pid");
   }
 
-  const exited = new Promise<void>((resolvePromise) => {
+  const processExited = new Promise<void>((resolvePromise) => {
     mainProcess.once("exit", () => resolvePromise());
+  });
+  const appClosed = new Promise<void>((resolvePromise) => {
+    electronApp.once("close", () => resolvePromise());
   });
 
   if (process.platform === "win32") {
@@ -121,7 +134,7 @@ async function forceTerminateProcessTree(mainProcess: ChildProcess): Promise<voi
     mainProcess.kill("SIGKILL");
   }
 
-  await exited;
+  await Promise.all([processExited, appClosed]);
 }
 
 test("a second launch attempt against the same userData directory never touches persistence and defers to the first instance's window", async () => {
@@ -322,7 +335,7 @@ test("after the first instance is force-terminated, a fresh instance against the
     // (tree) directly rather than calling app.close()/app.quit(), so
     // Electron never releases the lock through its own normal shutdown
     // path.
-    await forceTerminateProcessTree(firstApp.process());
+    await forceTerminateProcessTree(firstApp);
     firstApp = undefined;
 
     secondApp = await electron.launch({
