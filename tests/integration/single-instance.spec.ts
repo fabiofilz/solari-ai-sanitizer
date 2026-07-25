@@ -1,4 +1,10 @@
-import { test, expect, _electron as electron, type ElectronApplication } from "@playwright/test";
+import {
+  test,
+  expect,
+  _electron as electron,
+  type ElectronApplication,
+  type Page,
+} from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createRequire } from "node:module";
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -321,15 +327,27 @@ test("on macOS, a second-instance signal after the last window has been destroye
 
 test("after the first instance is force-terminated, a fresh instance against the same directory acquires the lock normally", async () => {
   const shared = makeSharedDir("solari-ai-sanitizer-single-instance-crash-");
+  const markerDir = makeSharedDir("solari-ai-sanitizer-single-instance-crash-marker-");
+  const markerPath = join(markerDir.path, "startup-marker.log");
+  writeFileSync(markerPath, "");
+
+  const sharedEnv = {
+    ...process.env,
+    SOLARI_TEST_USER_DATA_DIR: shared.path,
+    SOLARI_TEST_STARTUP_MARKER_PATH: markerPath,
+  };
+
   let firstApp: ElectronApplication | undefined;
   let secondApp: ElectronApplication | undefined;
 
   try {
-    firstApp = await electron.launch({
-      args: [projectRoot],
-      env: { ...process.env, SOLARI_TEST_USER_DATA_DIR: shared.path },
-    });
+    firstApp = await electron.launch({ args: [projectRoot], env: sharedEnv });
     await firstApp.firstWindow();
+
+    // Diagnostic only (no behavioral change): confirms the first instance's
+    // own post-lock initialization ran exactly once before its marker line
+    // is reused as a baseline for the fresh-instance diagnostic below.
+    expect(markerLineCount(markerPath)).toBe(1);
 
     // Simulate a crash, not a clean quit: force-terminate the process
     // (tree) directly rather than calling app.close()/app.quit(), so
@@ -338,16 +356,44 @@ test("after the first instance is force-terminated, a fresh instance against the
     await forceTerminateProcessTree(firstApp);
     firstApp = undefined;
 
-    secondApp = await electron.launch({
-      args: [projectRoot],
-      env: { ...process.env, SOLARI_TEST_USER_DATA_DIR: shared.path },
-    });
-    const window = await secondApp.firstWindow();
+    secondApp = await electron.launch({ args: [projectRoot], env: sharedEnv });
+
+    let window: Page;
+    try {
+      window = await secondApp.firstWindow();
+    } catch {
+      // The original exception (message, stack, path, environment, or any
+      // other uncontrolled content) is never forwarded - only a fixed,
+      // synthetic diagnostic derived from the marker line count, which
+      // app-lifecycle.ts appends to only once its post-lock initialization
+      // sequence begins.
+      const markerCount = markerLineCount(markerPath);
+      if (markerCount === 1) {
+        throw new Error(
+          "fresh instance failed to create a window: marker line count is 1 " +
+            "(baseline only) - the fresh process never entered post-lock " +
+            "initialization, i.e. it did not acquire the single-instance lock.",
+        );
+      }
+      if (markerCount === 2) {
+        throw new Error(
+          "fresh instance failed to create a window: marker line count is 2 - " +
+            "the fresh process acquired the lock and entered post-lock " +
+            "initialization, then closed before creating a window.",
+        );
+      }
+      throw new Error(
+        `fresh instance failed to create a window: unexpected marker line count ${markerCount}.`,
+      );
+    }
+
     await window.waitForLoadState("domcontentloaded");
     expect(secondApp.windows().length).toBe(1);
+    expect(markerLineCount(markerPath)).toBe(2);
   } finally {
     await firstApp?.close();
     await secondApp?.close();
     shared.cleanup();
+    markerDir.cleanup();
   }
 });
