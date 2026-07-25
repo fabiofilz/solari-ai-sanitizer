@@ -1,4 +1,13 @@
 {
-  "$schema": "Waiver entries for scripts/audit-check.mjs. Each waiver requires id (GHSA advisory ID), package, reason, and an expires date (YYYY-MM-DD). Only vulnerabilities with no available fix may be waived here — the audit gate re-checks this file on every run and fails again once a waiver expires.",
-  "waivers": []
+  "$schema": "Waiver entries for scripts/audit-check.mjs. Each waiver requires id (a single GHSA advisory ID), package, a non-empty reason, devOnly: true, noCompatibleFixConfirmedAt (YYYY-MM-DD), and expires (YYYY-MM-DD). Waivers never apply to critical severity, and never apply to an advisory with a genuinely compatible (fixAvailable === true, or isSemVerMajor: false) fix, regardless of this file's content. A waiver is also never usable if its GHSA id appears anywhere in the production-only audit (npm audit --omit=dev). The audit gate re-checks this file on every run and fails again once a waiver expires.",
+  "waivers": [
+    {
+      "id": "GHSA-mh99-v99m-4gvg",
+      "package": "brace-expansion",
+      "reason": "Dev-only transitive dependency of the eslint and electron-builder toolchains, unreachable from any production dependency. Installed copies are pinned to the tip of the 1.x (1.1.16) and 2.x (2.1.2) major lines; brace-expansion never published a patch release for those lines, only for 5.x (5.0.7 -> 5.0.8). Forcing the 1.x/2.x consumers to 5.x would cross a major/API boundary (CommonJS/ESM export behavior differs), so no compatible non-major fix currently exists for those copies.",
+      "devOnly": true,
+      "noCompatibleFixConfirmedAt": "2026-07-24",
+      "expires": "2026-08-07"
+    }
+  ]
 }
