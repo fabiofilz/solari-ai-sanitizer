@@ -47,7 +47,17 @@ interface SharedDir {
 
 function makeSharedDir(prefix: string): SharedDir {
   const dir = mkdtempSync(join(tmpdir(), prefix));
-  return { path: dir, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
+  return {
+    path: dir,
+    // maxRetries/retryDelay (not a suppressed catch): Windows can briefly
+    // hold a just-closed Electron/SQLite file handle open after the process
+    // exits, which turns a normal recursive removal into a transient EPERM.
+    // fs.rmSync's own bounded retry (5 attempts with linear backoff -
+    // 200 + 400 + 600 + 800 + 1000ms - 3s maximum accumulated retry delay)
+    // absorbs exactly that release delay; if removal still fails
+    // afterward, this throws and the test still fails, exactly as before.
+    cleanup: () => rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }),
+  };
 }
 
 function registryFilePaths(userDataDir: string) {
