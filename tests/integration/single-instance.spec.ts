@@ -87,6 +87,53 @@ function markerLineCount(markerPath: string): number {
   return content.split("\n").filter((line) => line.length > 0).length;
 }
 
+// Mirrors app-lifecycle.ts's own closed STARTUP_PHASE_TOKENS set exactly
+// (research.md #14) — this test never invents its own vocabulary, only
+// validates the marker file's content against the same fixed tokens the
+// application can possibly write.
+const KNOWN_PHASE_TOKENS = [
+  "POST_LOCK_OK",
+  "REGISTRY_OPEN_OK",
+  "REGISTRY_DEK_OK",
+  "RECONCILIATION_OK",
+  "IPC_REGISTRATION_OK",
+  "WINDOW_CREATED_OK",
+  "FAIL_REGISTRY_OPEN",
+  "FAIL_REGISTRY_DEK",
+  "FAIL_RECONCILIATION",
+  "FAIL_IPC_REGISTRATION",
+  "FAIL_WINDOW_CREATION",
+] as const;
+type KnownPhaseToken = (typeof KNOWN_PHASE_TOKENS)[number];
+type PhaseTokenResult = KnownPhaseToken | "NONE" | "INVALID_TOKEN";
+
+// Reads the last startup-phase token app-lifecycle.ts appended to
+// SOLARI_TEST_STARTUP_PHASE_MARKER_PATH (research.md #14) and validates it
+// by construction: the return type is the closed PhaseTokenResult union, so
+// an arbitrary/unvalidated line can never be returned, logged, or
+// interpolated anywhere a caller uses this value. "NONE" if the file is
+// empty/missing (no stage completed); "INVALID_TOKEN" (never the raw line
+// itself) if the last line is not a member of KNOWN_PHASE_TOKENS.
+function lastPhaseToken(phaseMarkerPath: string): PhaseTokenResult {
+  if (!existsSync(phaseMarkerPath)) return "NONE";
+  const lines = readFileSync(phaseMarkerPath, "utf8")
+    .split("\n")
+    .filter((line) => line.length > 0);
+  if (lines.length === 0) return "NONE";
+  const lastLine = lines[lines.length - 1];
+  return (KNOWN_PHASE_TOKENS as readonly string[]).includes(lastLine)
+    ? (lastLine as KnownPhaseToken)
+    : "INVALID_TOKEN";
+}
+
+// Existence-only check (never the path or contents) for the shared
+// userData directory's Electron "Local State" file — the file whose
+// Windows safeStorage/Chromium durability Fable's read-only crash analysis
+// ranked as the top suspect for the confirmed crash-restart failure.
+function localStateExists(userDataDir: string): boolean {
+  return existsSync(join(userDataDir, "Local State"));
+}
+
 // Force-terminates an Electron app's main process to simulate a crash (not
 // a clean quit) for the crash-recovery test below. A bare SIGKILL on the
 // main process does not reliably tear down its whole descendant process
@@ -330,11 +377,15 @@ test("after the first instance is force-terminated, a fresh instance against the
   const markerDir = makeSharedDir("solari-ai-sanitizer-single-instance-crash-marker-");
   const markerPath = join(markerDir.path, "startup-marker.log");
   writeFileSync(markerPath, "");
+  const phaseMarkerDir = makeSharedDir("solari-ai-sanitizer-single-instance-crash-phase-");
+  const phaseMarkerPath = join(phaseMarkerDir.path, "startup-phase-marker.log");
+  writeFileSync(phaseMarkerPath, "");
 
   const sharedEnv = {
     ...process.env,
     SOLARI_TEST_USER_DATA_DIR: shared.path,
     SOLARI_TEST_STARTUP_MARKER_PATH: markerPath,
+    SOLARI_TEST_STARTUP_PHASE_MARKER_PATH: phaseMarkerPath,
   };
 
   let firstApp: ElectronApplication | undefined;
@@ -348,6 +399,11 @@ test("after the first instance is force-terminated, a fresh instance against the
     // own post-lock initialization ran exactly once before its marker line
     // is reused as a baseline for the fresh-instance diagnostic below.
     expect(markerLineCount(markerPath)).toBe(1);
+
+    // Existence-only snapshot (never contents) of Electron's Local State
+    // file immediately before force-termination — one of the two safe
+    // booleans reported if the fresh instance below fails to start.
+    const localStateExistedBeforeTermination = localStateExists(shared.path);
 
     // Simulate a crash, not a clean quit: force-terminate the process
     // (tree) directly rather than calling app.close()/app.quit(), so
@@ -363,37 +419,29 @@ test("after the first instance is force-terminated, a fresh instance against the
       window = await secondApp.firstWindow();
     } catch {
       // The original exception (message, stack, path, environment, or any
-      // other uncontrolled content) is never forwarded - only a fixed,
-      // synthetic diagnostic derived from the marker line count, which
-      // app-lifecycle.ts appends to only once its post-lock initialization
-      // sequence begins.
-      const markerCount = markerLineCount(markerPath);
-      if (markerCount === 1) {
-        throw new Error(
-          "fresh instance failed to create a window: marker line count is 1 " +
-            "(baseline only) - the fresh process never entered post-lock " +
-            "initialization, i.e. it did not acquire the single-instance lock.",
-        );
-      }
-      if (markerCount === 2) {
-        throw new Error(
-          "fresh instance failed to create a window: marker line count is 2 - " +
-            "the fresh process acquired the lock and entered post-lock " +
-            "initialization, then closed before creating a window.",
-        );
-      }
+      // other uncontrolled content) is never forwarded - only the last
+      // fixed startup-phase token app-lifecycle.ts appended (research.md
+      // #14), plus two existence-only booleans for Local State. Never the
+      // shared userData path or any file contents.
+      const lastToken: PhaseTokenResult = lastPhaseToken(phaseMarkerPath);
+      const localStateExistedAfterFailure = localStateExists(shared.path);
       throw new Error(
-        `fresh instance failed to create a window: unexpected marker line count ${markerCount}.`,
+        "fresh instance failed to create a window: last recorded startup " +
+          `phase token is "${lastToken}"; Local State existed before force ` +
+          `termination: ${String(localStateExistedBeforeTermination)}; Local State ` +
+          `existed after the fresh-instance failure: ${String(localStateExistedAfterFailure)}.`,
       );
     }
 
     await window.waitForLoadState("domcontentloaded");
     expect(secondApp.windows().length).toBe(1);
     expect(markerLineCount(markerPath)).toBe(2);
+    expect(lastPhaseToken(phaseMarkerPath)).toBe("WINDOW_CREATED_OK");
   } finally {
     await firstApp?.close();
     await secondApp?.close();
     shared.cleanup();
     markerDir.cleanup();
+    phaseMarkerDir.cleanup();
   }
 });

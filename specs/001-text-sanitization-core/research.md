@@ -1018,15 +1018,42 @@ the SQL level.
     own PID to immediately after entering the post-lock initialization
     sequence — giving that test a way to directly observe whether this
     process's post-lock sequence (registry open, key unwrap, reconciliation)
-    ran, rather than only inferring it from filesystem side effects.
-  Both instances touch only a `userData`-path decision (or, for the marker,
-  writes a single PID to a test-supplied path) — neither opens SQLite, calls
-  `safeStorage`, or starts a worker, so neither weakens this topic's actual
-  security guarantee (no *security-relevant* startup step precedes the lock).
-  The dev/test branch and the marker variable have zero effect once packaged
-  (`app.isPackaged` is always `true` there); the packaged-Windows branch has
-  no effect on any other platform or in a dev/test build. No build ever has
-  more than this one path-resolution step ahead of the lock.
+    ran, rather than only inferring it from filesystem side effects. This
+    existing PID marker (`SOLARI_TEST_STARTUP_MARKER_PATH`) is unchanged by
+    everything below and keeps its current semantics exactly as described
+    here.
+
+    A third, separate test-only environment variable,
+    `SOLARI_TEST_STARTUP_PHASE_MARKER_PATH`, exists purely to diagnose which
+    startup stage a fresh process reaches before a crash-restart failure,
+    without exposing the underlying error. When set (and only when
+    `!app.isPackaged` — it has no effect at all in a packaged build), this
+    process appends exactly one token, drawn only from a fixed, closed
+    TypeScript literal union declared in app-lifecycle.ts, immediately after
+    each startup stage succeeds (e.g. registry.sqlite opened, the registry
+    DEK unwrapped, startup reconciliation completed, IPC handlers
+    registered, the `BrowserWindow` created) or, in the existing startup
+    catch, exactly one closed-vocabulary token identifying which stage was
+    executing when startup failed. This phase marker MUST NEVER contain a
+    raw error message, stack, cause, file path, database value, key
+    material, ciphertext, or any other application or user content — only
+    one of the fixed literal tokens, never a caller-supplied or free-form
+    string. It is strictly additive test scaffolding: it does not replace,
+    alter, or share state with the existing PID marker, and a failure to
+    write it (e.g. an unwritable path) MUST NOT alter the application's
+    fail-closed startup behavior — the existing safe-event log and
+    `app.quit()` call still run unconditionally.
+  All three (the userData-path decision, the PID marker, and the phase-token
+  marker) touch only that path decision, a single PID, or one fixed literal
+  token, respectively — none of them opens SQLite, calls `safeStorage`, or
+  starts a worker itself, so none weakens this topic's actual security
+  guarantee (no *security-relevant* startup step precedes the lock, and no
+  mechanism added for test observability can itself expose sensitive
+  content). The dev/test branch and both marker variables have zero effect
+  once packaged (`app.isPackaged` is always `true` there); the
+  packaged-Windows branch has no effect on any other platform or in a
+  dev/test build. No build ever has more than this one path-resolution step
+  ahead of the lock.
 - **Focus behavior**: the `second-instance` event handler on the surviving
   process focuses its existing window (restoring it if minimized), giving the
   user the expected "app is already open" experience rather than silence or a

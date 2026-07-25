@@ -59,6 +59,53 @@ if (app.isPackaged) {
   app.setPath("userData", overrideUserDataDir ?? createTempUserDataDir().path);
 }
 
+// Fixed, closed-vocabulary startup-phase diagnostic tokens (research.md
+// #14's test-observability paragraph). Test/dev-only observability for
+// diagnosing the confirmed Windows crash-restart failure without exposing
+// any raw error, message, stack, path, key, or content — only ever one of
+// these literal tokens is written, never a caller-supplied string.
+const STARTUP_PHASE_TOKENS = [
+  "POST_LOCK_OK",
+  "REGISTRY_OPEN_OK",
+  "REGISTRY_DEK_OK",
+  "RECONCILIATION_OK",
+  "IPC_REGISTRATION_OK",
+  "WINDOW_CREATED_OK",
+  "FAIL_REGISTRY_OPEN",
+  "FAIL_REGISTRY_DEK",
+  "FAIL_RECONCILIATION",
+  "FAIL_IPC_REGISTRATION",
+  "FAIL_WINDOW_CREATION",
+] as const;
+type StartupPhaseToken = (typeof STARTUP_PHASE_TOKENS)[number];
+
+// Appends exactly one closed-vocabulary token to
+// SOLARI_TEST_STARTUP_PHASE_MARKER_PATH — separate from, and never altering,
+// the existing SOLARI_TEST_STARTUP_MARKER_PATH PID marker above. No-op
+// unless !app.isPackaged and the env var is set, so this never runs in a
+// packaged build. `token`'s type is the closed StartupPhaseToken union, not
+// `string` and not `unknown`/`Error`, so passing an arbitrary string or an
+// error object is a compile-time type error, not something this function
+// could accept and forward at runtime. A write failure here is swallowed
+// rather than thrown, so this test-only diagnostic can never prevent the
+// real fail-closed startup path below from logging its safe event and
+// calling app.quit().
+function appendStartupPhaseMarker(token: StartupPhaseToken): void {
+  if (app.isPackaged) return;
+  const phaseMarkerPath = process.env["SOLARI_TEST_STARTUP_PHASE_MARKER_PATH"];
+  if (!phaseMarkerPath) return;
+  // Re-validates membership even though the parameter type already
+  // guarantees it, the same defense-in-depth pattern redact.ts's
+  // assertSafeLogEvent applies to a branded SafeId — catches a bad-faith
+  // `as StartupPhaseToken` cast that bypassed the type system.
+  if (!(STARTUP_PHASE_TOKENS as readonly string[]).includes(token)) return;
+  try {
+    appendFileSync(phaseMarkerPath, `${token}\n`);
+  } catch {
+    /* best-effort test-only diagnostic; must never affect startup behavior */
+  }
+}
+
 let mainWindow: BrowserWindow | null = null;
 
 function createWindow(): BrowserWindow {
@@ -145,8 +192,14 @@ if (!gotSingleInstanceLock) {
     // set; never present in a packaged build.
     const userDataDir = app.getPath("userData");
     let registryDb: Database.Database | undefined;
+    // Tracks which fixed failure token corresponds to the stage currently
+    // executing, so the catch below can append exactly one closed-vocabulary
+    // token identifying that stage — never a raw error (research.md #14).
+    let currentFailureToken: StartupPhaseToken = "FAIL_REGISTRY_OPEN";
 
     try {
+      appendStartupPhaseMarker("POST_LOCK_OK");
+
       if (!app.isPackaged) {
         const markerPath = process.env["SOLARI_TEST_STARTUP_MARKER_PATH"];
         if (markerPath) {
@@ -155,6 +208,9 @@ if (!gotSingleInstanceLock) {
       }
 
       registryDb = openRegistryDatabase(userDataDir);
+      appendStartupPhaseMarker("REGISTRY_OPEN_OK");
+      currentFailureToken = "FAIL_REGISTRY_DEK";
+
       const keyManager = buildKeyManager();
 
       // Fail-fast startup validation (research.md #10 "Database opening &
@@ -165,6 +221,8 @@ if (!gotSingleInstanceLock) {
       // so no raw key material lives in this module's memory for longer
       // than this one check.
       await getOrCreateRegistryDek(registryDb, keyManager);
+      appendStartupPhaseMarker("REGISTRY_DEK_OK");
+      currentFailureToken = "FAIL_RECONCILIATION";
 
       const workspacesDir = path.join(userDataDir, "workspaces");
       await reconcileDeletingWorkspacesOnStartup({
@@ -176,13 +234,18 @@ if (!gotSingleInstanceLock) {
         // deletion-reconciler.ts's own contract requires for this case.
         closeWorkspaceResources: () => undefined,
       });
+      appendStartupPhaseMarker("RECONCILIATION_OK");
+      currentFailureToken = "FAIL_IPC_REGISTRATION";
 
       registerWorkspaceIpcHandlers(
         ipcMain,
         buildWorkspaceHandlerDeps(registryDb, userDataDir, keyManager),
       );
+      appendStartupPhaseMarker("IPC_REGISTRATION_OK");
+      currentFailureToken = "FAIL_WINDOW_CREATION";
 
       mainWindow = createWindow();
+      appendStartupPhaseMarker("WINDOW_CREATED_OK");
     } catch (err) {
       // Fail closed (constitution Principle V "without compromise"): never
       // continue into a half-initialized state with no working registry
@@ -190,7 +253,9 @@ if (!gotSingleInstanceLock) {
       // Never logs the raw error (constitution Principle I) — only a safe,
       // closed-vocabulary category/code. The close itself is best-effort and
       // guarded: a throw from .close() must never prevent the safe log or
-      // app.quit() below from running.
+      // app.quit() below from running. The phase-marker append is similarly
+      // best-effort (research.md #14) and must never prevent it either.
+      appendStartupPhaseMarker(currentFailureToken);
       try {
         registryDb?.close();
       } catch {
