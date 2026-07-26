@@ -878,6 +878,66 @@ workspace — and therefore its own per-workspace DEK — exists yet.
   workspace's content, so there is no partial-availability path to fall back
   to. It never falls back to plaintext names — Security by Default "without
   compromise."
+- **Crash-recovery exception, `getOrCreateRegistryDek` only (FR-WORKSPACE-007,
+  SC-020)**: a confirmed Windows crash-restart defect showed that an
+  already-persisted `RegistryKey.wrapped_dek` can genuinely become
+  unrecoverable through no application bug — Chromium's own DPAPI-backed key
+  material for `safeStorage` is not guaranteed durably written to `Local
+  State` before an abrupt process termination, so a fresh process launched
+  immediately after a crash can fail to unwrap a registry DEK the previous
+  process itself just wrapped and persisted moments earlier. Failing closed
+  forever in that specific case is unnecessarily strict: **when the
+  `workspace` table contains zero rows**, the existing `RegistryKey` row
+  protects no persisted `Workspace.name_ciphertext` — there is nothing for a
+  replacement key to orphan — so `getOrCreateRegistryDek` (the
+  startup/create-path entry point; `src/domain/workspace/registry-dek.ts`) may
+  generate a fresh registry DEK, wrap it, and replace the unrecoverable row in
+  place. If the `workspace` table contains **any** row, regardless of whether
+  its `status` is `ACTIVE` or `DELETING`, that row's `name_ciphertext` was
+  encrypted under the existing (now-unrecoverable) registry DEK — replacing
+  the key would permanently orphan that name — so recovery MUST NOT occur;
+  the call fails closed with `REGISTRY_KEY_UNAVAILABLE`, exactly as before
+  this exception existed. This exception applies **only** to
+  `getOrCreateRegistryDek`; `loadExistingRegistryDek` (the
+  open/list/rename-path entry point, used when a `RegistryKey` row is
+  expected to already exist and be authoritative) remains strict in every
+  case and never creates or replaces a missing or unreadable registry DEK,
+  even when the `workspace` table is empty — see its own doc comment in
+  `registry-dek.ts`.
+  - **Ordering, never violated**: (1) confirm the failure is a genuine
+    key-unavailability failure (a `KeyManagerError` from `key-manager.ts`) —
+    an unrelated programming, database, or unexpected error propagates
+    unchanged and never triggers replacement; (2) count every `workspace` row
+    with no status filter; a nonzero count fails closed immediately with no
+    key generation, no wrap attempt, and no mutation of `registry_key`; (3) on
+    a zero count, generate a fresh 32-byte raw DEK and wrap it successfully
+    *before* touching the existing `registry_key` row — a wrap failure at
+    this step leaves that row byte-for-byte unchanged and still fails closed;
+    (4) only after a successful wrap, run one real `better-sqlite3`
+    transaction that rechecks the `workspace` count is still zero and that
+    the singleton `registry_key` row still holds the exact wrapped value
+    already found unrecoverable, then atomically replaces it — any mismatch
+    (a workspace was created, or the row changed or disappeared, between the
+    first count and this recheck) aborts the transaction, which
+    `better-sqlite3` rolls back automatically, and fails closed with
+    `REGISTRY_KEY_UNAVAILABLE`. This transactional recheck is retained as
+    defense in depth even though `research.md #14`'s single-instance lock
+    already prevents two processes from racing this path concurrently in
+    practice. The raw DEK is returned to the caller only after the
+    transaction commits successfully.
+  - **Tests** (added alongside this exception; Vitest, synthetic key material
+    only): recovery succeeds and returns a new 32-byte DEK when the workspace
+    table is empty and the stored key cannot be unwrapped; recovery fails
+    closed and leaves the previous wrapped value untouched when the
+    replacement wrap itself fails; recovery is refused with no wrap attempt
+    and no mutation when an `ACTIVE` workspace row exists; the same refusal
+    for a `DELETING` workspace row; the transactional recheck aborts
+    replacement when a workspace row appears between the initial count and
+    the recheck; `loadExistingRegistryDek` never recovers even with zero
+    workspace rows; an unrelated (non-`KeyManagerError`) failure propagates
+    unchanged and never triggers replacement; and no raw DEK, wrapped DEK,
+    workspace data, underlying exception message, path, or other sensitive
+    value ever appears in a log line or a returned error.
 - **Interaction with per-workspace DEKs**: fully independent keys serving
   fully independent purposes — the registry DEK exists exactly once per
   installation and only ever protects `Workspace.name`; each workspace's own

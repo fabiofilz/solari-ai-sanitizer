@@ -23,7 +23,7 @@ that workspace, and its own DEK, exist.
 | Field | Type | Rule |
 |---|---|---|
 | id | PK, fixed = 1 | Singleton — exactly one row, created on first application launch or first workspace creation, whichever comes first |
-| wrapped_dek | blob | The registry's 256-bit data-encryption key, Base64-encoded then wrapped via `safeStorage.encryptStringAsync` (research.md #10, #13) — never stored unwrapped. Not destroyed by any individual workspace's deletion; persists for the lifetime of the installation |
+| wrapped_dek | blob | The registry's 256-bit data-encryption key, Base64-encoded then wrapped via `safeStorage.encryptStringAsync` (research.md #10, #13) — never stored unwrapped. Not destroyed by any individual workspace's deletion; persists for the lifetime of the installation. If this row's wrapped value later becomes unrecoverable (e.g. the confirmed Windows crash-restart timing defect, research.md #13), `getOrCreateRegistryDek` (the startup/create-path entry point only) MAY replace it in place via one recheck-then-update transaction, but **only** when the `Workspace` table below contains zero rows (FR-WORKSPACE-007, SC-020) — never when any row exists, `ACTIVE` or `DELETING`. `loadExistingRegistryDek` (open/list/rename) never performs this replacement, even when `Workspace` is empty |
 
 ### Workspace
 
@@ -47,7 +47,12 @@ independent `wrapped_dek` for its per-workspace file's contents.
   subkey, generate and wrap a fresh per-workspace `wrapped_dek`, and insert the
   registry row (`status = ACTIVE`) + create a new empty per-workspace file.
   Refuses with `REGISTRY_KEY_UNAVAILABLE` if the registry DEK cannot be
-  created/unwrapped (research.md #13), checked before either key is generated.
+  created/unwrapped (research.md #13), checked before either key is generated
+  — unless the existing registry DEK is unrecoverable **and** zero `Workspace`
+  rows currently exist, in which case a replacement registry DEK is generated
+  and persisted automatically instead of failing closed (FR-WORKSPACE-007,
+  SC-020; research.md #13's crash-recovery exception). This exception never
+  applies once any `Workspace` row exists, regardless of `status`.
 - **Rename** (FR-WORKSPACE-002) → recompute `normalized_name_hmac` for the new
   name, re-check uniqueness, then update `name_ciphertext`/`normalized_name_hmac`
   only; the per-workspace file, its contents, and its own `wrapped_dek` are

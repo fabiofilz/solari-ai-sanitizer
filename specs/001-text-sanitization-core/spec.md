@@ -23,6 +23,10 @@
 - Q: How are two unresolved pending decisions that merely look similar to each other (but are not exact normalized duplicates) treated? → A: They remain fully independent — no automatic merge, no prompt to merge them, and no shared placeholder while both remain unresolved. Once one is resolved as ALWAYS and has a persisted placeholder, resolving the other may trigger the existing same-entity/different-entity alias flow against that persisted mapping. Alias matching targets only mappings whose current policy is ALWAYS: a pending candidate resolved directly as NEVER (having never been ALWAYS) has never received a placeholder, and any mapping whose current policy is NEVER is never an alias target — regardless of whether it retains a historical placeholder from an earlier ALWAYS decision. All comparisons stay scoped to the active workspace.
 - Q: What minimum input size, dictionary size, and responsiveness must the feature support? → A: At minimum, one pasted input of up to 500,000 Unicode characters, one workspace dictionary of up to 10,000 saved terms (including aliases), deterministic sanitization/restoration completing within 2 seconds on the implementation plan's minimum supported hardware, and visible processing feedback whenever an operation is not instantaneous. The benchmark environment, debounce interval, and minimum supported hardware are implementation-plan concerns, not part of this specification.
 
+### Session 2026-07-25
+
+- Q: If the internal key that protects workspace names is later found to be unreadable (for example, after an application crash before the operating system finished persisting key material), may the system generate a replacement automatically? → A: Only when zero workspaces currently exist in the registry — in that case nothing is orphaned by a replacement, so the system replaces the key and continues. If any workspace already exists, whether active or in the middle of being deleted, the system must refuse and report the key as unavailable rather than risk generating a replacement that could no longer verify or manage an existing workspace's name; the previously stored (unreadable) key material is left untouched in that case.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Sanitize confidential text before sharing it (Priority: P1)
@@ -169,6 +173,7 @@ Separately from pasting and translating text, the user opens a dedicated view of
 - What happens when a programmatic update to one panel (caused by a translation from the other panel) could itself be treated as new input? It must not trigger a further translation — only a direct user edit or paste initiates a new translation, so the two panels can never loop.
 - What happens when two different, still-unresolved pending decisions happen to look similar to each other? They remain fully independent — no automatic merge, no merge prompt, and no shared placeholder — until at least one is resolved to ALWAYS, at which point resolving the other may trigger the same-entity/different-entity alias flow against the now-persisted placeholder.
 - What happens when a pending decision is resolved as NEVER and a different term resembling it is later flagged? The NEVER term is never offered as a similarity/alias match. Alias matching targets only mappings whose current policy is ALWAYS: a pending candidate resolved directly as NEVER has never received a placeholder, and this exclusion applies equally to a term that was previously ALWAYS and later switched to NEVER — even though that term retains its historical placeholder for restoration, it is not offered as an alias target while its current policy remains NEVER.
+- What happens when the internal key protecting workspace names cannot be read back after an interrupted shutdown? If no workspace has been created yet, the system replaces it automatically and continues; if any workspace already exists, including one still being deleted, the system refuses every workspace operation and reports the key as unavailable rather than silently generating a replacement that would orphan an already-named workspace.
 
 ## Requirements *(mandatory)*
 
@@ -182,6 +187,7 @@ Separately from pasting and translating text, the user opens a dedicated view of
 - **FR-WORKSPACE-004**: The system MUST allow the user to list all existing workspaces.
 - **FR-WORKSPACE-005**: The system MUST allow the user to delete a workspace only after an explicit confirmation that describes what will be permanently removed, including its mappings, policies, prefixes, pending decisions, and counters.
 - **FR-WORKSPACE-006**: The system MUST keep every mapping, policy, prefix, sequence counter, alias, principal-original selection, and pending decision scoped to exactly one workspace, with no lookup, suggestion, restoration, or identifier allocation ever crossing into another workspace.
+- **FR-WORKSPACE-007**: If the internal key that protects every workspace name becomes unreadable (for example, following an interrupted application shutdown) and the system cannot recover it, the system MUST replace it automatically and continue only when zero workspaces currently exist, since no workspace name is protected by an unreadable key in that case. If one or more workspaces already exist — including a workspace currently being deleted — the system MUST NOT replace that key automatically; it MUST refuse to create, open, list, or rename any workspace and report that the required internal key is unavailable, leaving the existing unreadable key material unchanged, until the underlying issue is resolved outside this feature.
 
 #### Bidirectional editing
 
@@ -303,6 +309,7 @@ Separately from pasting and translating text, the user opens a dedicated view of
 - **SC-017**: A workspace dictionary containing 10,000 saved terms (including aliases) continues to support correct lookup, search, sanitization, and restoration without failure.
 - **SC-018**: Deterministic sanitization or restoration of a qualifying input completes within 2 seconds on the minimum supported hardware defined by the implementation plan, verified across representative benchmark runs.
 - **SC-019**: In 100% of test cases where a sanitize or restore operation is not instantaneous, the user sees visible processing feedback rather than an unresponsive interface.
+- **SC-020**: Across test cases exercising an unreadable internal registry-protection key: when zero workspaces exist, automatic replacement succeeds and the affected operation completes in 100% of runs; when one or more workspaces exist (in any combination of active and mid-deletion), 100% of runs are refused with the internal-key-unavailable outcome and no replacement occurs; and in 100% of runs where replacement cannot complete (for example, because generating the replacement itself fails), the previously stored key record is preserved unchanged.
 
 ## Assumptions
 

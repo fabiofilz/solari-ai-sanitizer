@@ -93,7 +93,7 @@ Single-project Electron application per plan.md's Project Structure:
 
 - [X] T032 [P] Unit tests for domain/workspace create and open: name normalization + HMAC-based uniqueness enforcement, DEK generation/wrapping on create, and name-decrypt/DEK-unwrap on open, written and confirmed to fail before create.ts/open.ts exist, in tests/unit/domain/workspace/create-open.test.ts (FR-WORKSPACE-001/003; constitution Principle VI)
 - [X] T033 [P] Contract test for the `workspace:create` and `workspace:open` request/response shapes and error codes (`DUPLICATE_NAME`, `REGISTRY_KEY_UNAVAILABLE`, `NOT_FOUND`, `WORKSPACE_KEY_UNAVAILABLE`), written and confirmed to fail before the handlers exist, in tests/contract/workspace-bootstrap.test.ts (contracts/workspace.md; constitution Principle VI) — the only `workspace:*` channels needed before any user story can be exercised; `workspace:rename`/`list`/`delete` get their own contract test in US5 (T128)
-- [X] T034 Implement domain/workspace create: normalize and HMAC-check name uniqueness against the RegistryKey blind index, encrypt the name with the registry DEK, generate and wrap a fresh per-workspace DEK, insert the registry row, and create the empty per-workspace file, in src/domain/workspace/create.ts, making T032's create assertions pass (FR-WORKSPACE-001; data-model.md Workspace lifecycle) (depends on T015-T017, T028)
+- [X] T034 Implement domain/workspace create: normalize and HMAC-check name uniqueness against the RegistryKey blind index, encrypt the name with the registry DEK, generate and wrap a fresh per-workspace DEK, insert the registry row, and create the empty per-workspace file, in src/domain/workspace/create.ts, making T032's create assertions pass (FR-WORKSPACE-001; data-model.md Workspace lifecycle) (depends on T015-T017, T028) — **Revision note (Windows registry-DEK crash-recovery fix, 2026-07-25, ID kept stable)**: `src/domain/workspace/registry-dek.ts`'s `getOrCreateRegistryDek` (the registry-DEK helper this task's create.ts calls) was extended with a new, narrowly-scoped recovery path per FR-WORKSPACE-007/SC-020: an existing wrapped registry DEK that cannot be unwrapped may now be automatically replaced, but only when the `workspace` table contains zero rows; any existing row (`ACTIVE` or `DELETING`) still fails closed with `REGISTRY_KEY_UNAVAILABLE` exactly as before, and `loadExistingRegistryDek` (T035's open.ts helper) is explicitly unchanged and remains strict. New focused unit tests were written and confirmed failing against the unmodified implementation first (tests/unit/domain/workspace/registry-dek.test.ts). See research.md #13, data-model.md, contracts/workspace.md, and plan.md's "Fifth Phase-1 revision re-check" for the full normative update. No task ID was added or renumbered; T046 onward is untouched.
 - [X] T035 Implement domain/workspace open: decrypt `name_ciphertext`, unwrap the workspace's own `wrapped_dek`, and validate that the workspace's per-workspace file can be opened — closing it again afterward without retaining any server-side "active connection" state (contracts/workspace.md design note) — in src/domain/workspace/open.ts, making T032's open assertions pass (FR-WORKSPACE-003) (depends on T028)
 - [X] T036 Implement the `workspace:create` and `workspace:open` IPC handlers wiring T034/T035 through the T026 Zod-validated dispatch boundary, making T033 pass, in src/main/ipc/workspace-handlers.ts (remaining `workspace:*` channels are added in US5) (depends on T022, T026, T034, T035)
 - [X] T037 Implement the preload `contextBridge` API surface skeleton, exposed with `contextIsolation: true` and `nodeIntegration: false` as the sole bridge the renderer uses, and wire `workspace:create`/`workspace:open` into it; every subsequent user story adds its own channels to this same file, in src/preload/index.ts (constitution Principle V) (depends on T036)
@@ -487,3 +487,37 @@ Task count unchanged at **162**.
 - **T079/T090 amended** (dependency on T044 added; both now explicitly required to replace translation-worker.ts's `HANDLER_NOT_CONFIGURED` branch for their own direction with a real call, and to update translation-worker.test.ts's corresponding assertion) — this is where the real sanitizer/restorer wiring T044 originally described actually happens now.
 - **research.md #11** ("Project structure impact") and **plan.md** (Project Structure tree, translation-worker.ts comment line) corrected — both previously described the pre-split final state as if it were T044's own immediate output.
 - **No new task ID was created**; task count remains **162**, all IDs T001-T162 unchanged and sequential. No FR/SC citation was dropped. `src/domain/sanitizer/**` and `src/domain/restorer/**` were NOT created — `HANDLER_NOT_CONFIGURED` is a real, honest protocol-level response asserted directly by translation-worker.test.ts, never a fabricated sanitize/restore result.
+
+## Windows registry-DEK crash-recovery fix (2026-07-25)
+
+**Confirmed defect**: the Windows crash-restart integration test
+(`tests/integration/single-instance.spec.ts`) reached `FAIL_REGISTRY_DEK` on
+a fresh instance launched immediately after force-terminating a prior one,
+against real Electron `safeStorage`/DPAPI timing (Chromium had not yet
+durably persisted its own key material to `Local State` before
+termination) — not an Electron-version defect. A prior, independent
+read-only root-cause audit (Fable) ruled out sleeps, synchronous
+`safeStorage`, and direct `Local State` manipulation as the fix.
+
+**Resolution**: added `FR-WORKSPACE-007` and `SC-020` to spec.md (new IDs,
+verified unused beforehand), plus a Clarifications entry and an Edge Case
+entry; updated research.md #13, data-model.md, contracts/workspace.md, and
+plan.md's Constitution Check (new "Fifth Phase-1 revision re-check" —
+PASS on all seven principles, no constitution amendment needed).
+`src/domain/workspace/registry-dek.ts`'s `getOrCreateRegistryDek` now
+recovers an unrecoverable registry DEK automatically only when the
+`workspace` table has zero rows; any existing row (`ACTIVE` or `DELETING`)
+still fails closed with `REGISTRY_KEY_UNAVAILABLE`, with the previous
+wrapped value left byte-for-byte unchanged whenever recovery does not
+complete. `loadExistingRegistryDek` is explicitly unchanged and remains
+strict in every case. New focused unit tests
+(`tests/unit/domain/workspace/registry-dek.test.ts`) were written and
+confirmed to fail against the real, unmodified implementation before this
+fix, per the constitution's Test-First Traceability principle.
+
+**Traceability-only change to this file**: a revision note was appended to
+**T034** (the task whose create.ts calls `getOrCreateRegistryDek`) recording
+this fix; T034's own ID, checkbox, and scope are otherwise unchanged. **No
+task ID was added, removed, or renumbered** — task count remains **162**,
+all IDs T001-T162 unchanged and sequential. **T046 onward was not started,
+touched, or completed** as part of this fix.

@@ -47,8 +47,16 @@ redundant second process.
   Assumptions: names are unique application-wide, case/diacritic/whitespace-
   normalization-aware); `REGISTRY_KEY_UNAVAILABLE` — the registry DEK could not
   be created or unwrapped, checked before either the name or the new
-  workspace's own `wrapped_dek` is generated (research.md #13)
-- **Satisfies**: FR-WORKSPACE-001
+  workspace's own `wrapped_dek` is generated (research.md #13). **Exception**
+  (FR-WORKSPACE-007, SC-020): if an existing registry DEK cannot be unwrapped
+  but zero workspace rows currently exist anywhere in the registry, this call
+  transparently replaces the unrecoverable key and proceeds instead of
+  returning `REGISTRY_KEY_UNAVAILABLE` — there is no persisted workspace name
+  the replacement could orphan. The moment one or more workspace rows exist
+  (`ACTIVE` or `DELETING`), this exception no longer applies and the call
+  fails closed with `REGISTRY_KEY_UNAVAILABLE` exactly as before, without
+  mutating the existing (unrecoverable) key record.
+- **Satisfies**: FR-WORKSPACE-001, FR-WORKSPACE-007
 
 ## `workspace:rename`
 

@@ -293,6 +293,59 @@ product behavior:
 
 No new Complexity Tracking row is warranted; the table remains empty.
 
+**Fifth Phase-1 revision re-check** (Windows registry-DEK crash-recovery
+fix, 2026-07-25): still PASS on all seven principles. This revision adds a
+narrowly-scoped, safe self-heal to the already-approved registry-DEK design
+(research.md #13), not new scope or a weakening of any existing guarantee:
+
+- **Confirmed defect**: a real Windows crash-restart integration failure
+  showed `getOrCreateRegistryDek` reaching `FAIL_REGISTRY_DEK` on a fresh
+  process launched immediately after force-terminating a prior instance,
+  because Chromium had not yet durably persisted the DPAPI-backed key
+  material `safeStorage` depends on to `Local State` before termination — not
+  an Electron-version defect, not something sleeps, synchronous
+  `safeStorage`, or direct `Local State` manipulation can correctly address
+  (all four were considered and rejected; see the Fable pre-implementation
+  root-cause audit referenced in `tests/integration/single-instance.spec.ts`).
+- **New rule (FR-WORKSPACE-007, SC-020)**: `getOrCreateRegistryDek` — the
+  startup/create-path entry point only — may replace an unrecoverable
+  registry DEK automatically, but only when the `workspace` table contains
+  zero rows (research.md #13's crash-recovery exception; `data-model.md`'s
+  `RegistryKey`/`Workspace` lifecycle notes; `contracts/workspace.md`'s
+  `workspace:create` exception). If any workspace row exists, `ACTIVE` or
+  `DELETING`, the existing key is left untouched and the call still fails
+  closed with `REGISTRY_KEY_UNAVAILABLE`, exactly as before this fix.
+  `loadExistingRegistryDek` — the open/list/rename-path entry point — is
+  explicitly unchanged and remains strict in every case.
+- **Constitution re-check, Principle V ("Security by Default... MUST be
+  implemented without compromise") and Principle I ("never falls back to
+  plaintext")**: still PASS, not weakened. The replacement key uses the
+  identical `safeStorage`-wrapped, AES-256-GCM/HMAC scheme already approved
+  for the registry DEK (research.md #13) — there is no plaintext fallback,
+  no weaker key, and no bypassed encryption. The self-heal is safe by
+  construction, not merely convenient: an empty `workspace` table means the
+  existing registry DEK protects zero persisted `Workspace.name_ciphertext`
+  values, so replacing it orphans nothing. The moment even one workspace row
+  exists, the exception no longer applies and the strict fail-closed
+  behavior this project already committed to is fully preserved — this is
+  compliance depth on an already-approved design, exactly like the
+  justification pattern already used above for encryption at rest, the
+  worker-thread boundary, the crash-safe deletion protocol,
+  workspace-name encryption, and the single-instance lock; no new
+  Complexity Tracking row is warranted for the same reason none of those
+  needed one.
+- **No constitution amendment required**: unlike the Fourth revision above,
+  no wording gap was found between `.specify/memory/constitution.md` and
+  this fix — Principle V's "without compromise" and Principle I's
+  "never falls back to plaintext" both already accommodate a same-strength,
+  zero-orphaned-data key replacement; nothing in the constitution's text
+  needed correcting to accommodate it.
+- No task scope changed beyond this correction: `src/domain/workspace/
+  registry-dek.ts` and its focused unit tests only; T046 onward remains
+  untouched.
+
+No new Complexity Tracking row is warranted; the table remains empty.
+
 ## Project Structure
 
 ### Documentation (this feature)
