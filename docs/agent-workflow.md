@@ -190,16 +190,64 @@ for the risk profile above, not for every task "to be safe."
 
 ## Model selection for reviewers
 
-These reviewer definitions omit the `model` field, so each inherits the
-model of the session that invokes it (the orchestrator's active model),
-rather than hardcoding a specific alias. This installed Claude Code version
-(2.1.216) supports `model: inherit` and named aliases (e.g. `sonnet`,
-`opus`, `haiku`, `fable`) in agent frontmatter, but none of the review tasks
-here are simple/repetitive classification work — the kind of task this
-project's model-selection guidance reserves for a cheaper, faster model — so
-no alias was hardcoded. `fable` in particular is not hardcoded for these
-agents, since it would consume the subscription's premium-model allowance on
-every review with no evidence it's needed for read-only spec/security/test
-analysis. If a future measurement shows a specific alias performs
-acceptably for these reviewers, add `model: <alias>` explicitly rather than
-leaving it implicit — don't infer it.
+Each reviewer's frontmatter now pins an explicit `model`, `effort`, and
+`maxTurns` rather than leaving any of them implicit:
+
+| Agent                    | model  | effort | maxTurns |
+| ------------------------ | ------ | ------ | -------- |
+| `specification-reviewer` | sonnet | medium | 10       |
+| `security-reviewer`      | sonnet | high   | 12       |
+| `test-reviewer`          | sonnet | medium | 10       |
+
+**Why `model: sonnet` is explicit, not inherited.** An explicit alias
+prevents a reviewer from silently inheriting whatever model the orchestrator
+happens to be running as — Opus, Fable, or any other higher-consumption
+model — when the orchestrator session itself is on one of those for
+unrelated reasons. Reviewer consumption should be predictable and decoupled
+from the orchestrator's own model choice.
+
+**Why `security-reviewer` gets `effort: high`.** It covers cryptographic
+boundaries, key lifecycle, destructive deletion, persistence ordering,
+workspace isolation, and sensitive-data exposure — the categories this
+project already treats as mandatory `FULL_MULTI_AGENT` regardless of score.
+That risk profile justifies the higher reasoning effort.
+
+**Why `specification-reviewer` and `test-reviewer` get `effort: medium`.**
+Both require careful reasoning against normative artifacts and test
+evidence, but their findings are not inherently security-critical the way
+`security-reviewer`'s are, so they do not currently justify `high` effort.
+
+**Why `maxTurns` is bounded (10/12).** These limits cap runaway reviewer
+loops and keep per-review consumption predictable. They are not a
+correctness guarantee — a reviewer that needs more turns to finish a
+narrowly-scoped review should get a narrower packet, not a higher limit as
+a first resort.
+
+**The orchestrator is unaffected.** These settings apply only to the three
+reviewer subagents. The orchestrator (main session) remains free to run on
+whatever model or effort level the user has selected for it; nothing here
+changes the main session's own model.
+
+**Why not `fable`.** `fable` is not selected for these agents because, for
+this account, it currently requires usage credits to invoke — not something
+to spend by default on every read-only review.
+
+**Why not `opus` (for now).** `opus` is not fixed as the default reviewer
+model. A future explicit change could route a narrowly scoped, exceptional
+review to `opus` if it becomes available without unwanted usage-credit
+charges — that would be a deliberate, scoped decision at the time, not an
+implicit default.
+
+**Why not `haiku`.** `haiku` is not selected at this stage because these
+reviewers are expected to catch subtle requirement, security, and
+test-quality defects — the kind of nuanced judgment this project's
+model-selection guidance reserves for a stronger model, not the
+simple/repetitive classification work `haiku` is suited for.
+
+**Token efficiency still comes primarily from routing, not model choice.**
+Explicit model/effort/turn settings bound per-invocation consumption, but
+the larger lever remains risk-based routing: no reviewers for `SIMPLE` work,
+one reviewer for `TARGETED_REVIEW`, narrowly-scoped review packets, and
+avoiding duplicated pre-/post-implementation analysis. None of the settings
+above guarantee a specific token count or monetary cost — they bound and
+make consumption more predictable, not billed-cost-exact.

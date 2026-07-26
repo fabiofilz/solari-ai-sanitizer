@@ -1,0 +1,13 @@
+dist/
+release/
+coverage/
+node_modules/
+playwright-report/
+test-results/
+discovery/
+package-lock.json
+
+# Spec Kit tooling and feature documentation — not this feature's source tree
+.claude/
+.specify/
+specs/
